@@ -50,11 +50,10 @@ func main() {
 	for _, pageFile := range pageFiles {
 		page, err := logseq.LoadPage(pageFile, pagesDir)
 		if err != nil {
-			log.Fatal("loading page:", err)
+			log.Fatalf("loading page %s: %v", pageFile, err)
 		}
 
 		log.Info(page)
-		log.Fatal("stop here")
 	}
 
 	log.Info("All done!")

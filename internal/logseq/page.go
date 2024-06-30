@@ -15,20 +15,12 @@ type Page struct {
 	Name        string
 	PathInGraph string
 	FullPath    string
+	Blocks      []Block
 }
 
 type PageLine struct {
 	Content string
 	Indent  int
-}
-
-type Block struct {
-	ContentLines []string
-	Indent       int
-}
-
-func (b Block) String() string {
-	return strings.Join(b.ContentLines, "\n")
 }
 
 func LoadPage(pageFile string, graphPath string) (Page, error) {
@@ -53,48 +45,9 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 		return Page{}, errors.New("loading page lines: " + err.Error())
 	}
 
-	branchBlockOpener := "- "
-	branchBlockContinuer := "  "
-	blocks := []Block{}
-	currentBlockLines := []string{}
-	currentIndent := 0
-
-	for _, line := range lines {
-		if strings.HasPrefix(line.Content, branchBlockOpener) {
-			// Remember and reset the current block.
-			if len(currentBlockLines) > 0 {
-				blocks = append(blocks, Block{
-					ContentLines: currentBlockLines,
-					Indent:       currentIndent,
-				})
-			}
-			currentBlockLines = []string{}
-			currentIndent = line.Indent
-			line.Content = strings.TrimPrefix(line.Content, branchBlockOpener)
-		} else if strings.HasPrefix(line.Content, branchBlockContinuer) {
-			// Ensure that the current line is a continuation of the current block
-			// by checking that the current block has at least one line and the current
-			// line has the same indent as the block.
-			if len(currentBlockLines) == 0 {
-				return Page{}, errors.New("no block to continue: " + line.Content)
-			}
-
-			line.Content = strings.TrimPrefix(line.Content, branchBlockContinuer)
-		}
-
-		if line.Indent != currentIndent {
-			return Page{}, errors.New("mismatched indent: " + line.Content)
-		}
-
-		currentBlockLines = append(currentBlockLines, line.Content)
-	}
-
-	// Remember the last block.
-	if len(currentBlockLines) > 0 {
-		blocks = append(blocks, Block{
-			ContentLines: currentBlockLines,
-			Indent:       currentIndent,
-		})
+	blocks, err := findBlocks(lines)
+	if err != nil {
+		return Page{}, errors.New("finding blocks: " + err.Error())
 	}
 
 	for _, block := range blocks {
@@ -105,6 +58,7 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 		Name:        fullPageName,
 		PathInGraph: pathInGraph,
 		FullPath:    pageFile,
+		Blocks:      blocks,
 	}, nil
 }
 
