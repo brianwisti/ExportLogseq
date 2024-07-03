@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -11,8 +12,11 @@ import (
 	config "export-logseq/internal/logseq"
 )
 
+type Graph struct {
+	Pages []logseq.Page `json:"pages"`
+}
+
 func main() {
-	log.SetFormatter(&log.JSONFormatter{})
 	log.Info("Initializing...")
 	dotEnvErr := godotenv.Load()
 	if dotEnvErr != nil {
@@ -47,14 +51,35 @@ func main() {
 		log.Fatal("listing page files:", err)
 	}
 
+	pages := make([]logseq.Page, 0, len(pageFiles))
+
 	for _, pageFile := range pageFiles {
 		page, err := logseq.LoadPage(pageFile, pagesDir)
 		if err != nil {
 			log.Fatalf("loading page %s: %v", pageFile, err)
 		}
-
-		log.Info(page)
+		pages = append(pages, page)
 	}
 
+	journalsDir := filepath.Join(graphDir, "journals")
+	log.Info("Journals directory:", journalsDir)
+	journalFiles, err := filepath.Glob(filepath.Join(journalsDir, "*.md"))
+	if err != nil {
+		log.Fatal("listing journal files:", err)
+	}
+
+	for _, journalFile := range journalFiles {
+		page, err := logseq.LoadPage(journalFile, journalsDir)
+		if err != nil {
+			log.Fatalf("loading journal %s: %v", journalFile, err)
+		}
+		pages = append(pages, page)
+	}
+
+	graph := Graph{Pages: pages}
+
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(graph)
 	log.Info("All done!")
 }
