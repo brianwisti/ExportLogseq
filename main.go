@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/lpernett/godotenv"
 	log "github.com/sirupsen/logrus"
@@ -17,6 +18,7 @@ type Graph struct {
 }
 
 func main() {
+	start := time.Now()
 	log.Info("Initializing...")
 	dotEnvErr := godotenv.Load()
 	if dotEnvErr != nil {
@@ -78,8 +80,16 @@ func main() {
 
 	graph := Graph{Pages: pages}
 
-	enc := json.NewEncoder(os.Stdout)
+	exportFile, err := os.Create("logseq.json")
+	if err != nil {
+		log.Fatal("creating export file:", err)
+	}
+	defer exportFile.Close()
+
+	enc := json.NewEncoder(exportFile)
 	enc.SetIndent("", "  ")
 	enc.Encode(graph)
 	log.Info("All done!")
+	elapsed := time.Since(start)
+	log.Infof("Elapsed time: %s", elapsed)
 }
