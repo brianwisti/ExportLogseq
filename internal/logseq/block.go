@@ -4,29 +4,27 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
-type Property struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
+type PropertyMap map[string]string
 type Block struct {
-	Content     string     `json:"content"`
-	Properties  []Property `json:"properties,omitempty"`
-	SourceLines []string   `json:"-"`
-	Depth       int        `json:"-"`
-	Position    int        `json:"-"`
-	Callout     string     `json:"callout,omitempty"`
-	Children    []*Block   `json:"children,omitempty"`
+	ID          string       `json:"id"`
+	Content     string       `json:"content"`
+	Properties  *PropertyMap `json:"properties,omitempty"`
+	SourceLines []string     `json:"-"`
+	Depth       int          `json:"-"`
+	Position    int          `json:"-"`
+	Callout     string       `json:"callout,omitempty"`
+	Children    []*Block     `json:"children,omitempty"`
 }
 
 func (b *Block) ParseSourceLines() {
 	propertyRe := regexp.MustCompile("^([a-zA-Z][a-zA-Z0-9_-]*):: (.*)")
 	calloutOpenerRe := regexp.MustCompile("^#+BEGIN_([A-Z]+)")
 	contentLines := []string{}
-	properties := []Property{}
+	properties := make(PropertyMap)
 	var callout string
 	inCallout := false
 
@@ -34,8 +32,7 @@ func (b *Block) ParseSourceLines() {
 		propertyMatch := propertyRe.FindStringSubmatch(line)
 		if propertyMatch != nil {
 			prop_name, prop_value := propertyMatch[1], propertyMatch[2]
-			prop := Property{Name: prop_name, Value: prop_value}
-			properties = append(properties, prop)
+			properties[prop_name] = prop_value
 			continue
 		}
 
@@ -60,7 +57,13 @@ func (b *Block) ParseSourceLines() {
 		log.Fatal("Unclosed callout")
 	}
 
-	b.Properties = properties
+	uuidString, ok := properties["id"]
+	if !ok {
+		uuidString = uuid.New().String()
+	}
+
+	b.ID = uuidString
+	b.Properties = &properties
 	b.Callout = callout
 	content := strings.Join(contentLines, "\n")
 	b.Content = content
