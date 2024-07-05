@@ -5,28 +5,23 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 )
 
 type PropertyMap map[string]string
 type Block struct {
 	ID          string       `json:"id"`
-	Content     string       `json:"content"`
+	Content     BlockContent `json:"content"`
 	Properties  *PropertyMap `json:"properties,omitempty"`
 	SourceLines []string     `json:"-"`
 	Depth       int          `json:"-"`
 	Position    int          `json:"-"`
-	Callout     string       `json:"callout,omitempty"`
 	Children    []*Block     `json:"children,omitempty"`
 }
 
 func (b *Block) ParseSourceLines() {
 	propertyRe := regexp.MustCompile("^([a-zA-Z][a-zA-Z0-9_-]*):: (.*)")
-	calloutOpenerRe := regexp.MustCompile("^#+BEGIN_([A-Z]+)")
 	contentLines := []string{}
 	properties := make(PropertyMap)
-	var callout string
-	inCallout := false
 
 	for _, line := range b.SourceLines {
 		propertyMatch := propertyRe.FindStringSubmatch(line)
@@ -36,25 +31,7 @@ func (b *Block) ParseSourceLines() {
 			continue
 		}
 
-		if inCallout {
-			if strings.HasPrefix(line, "#+END_"+callout) {
-				inCallout = false
-				continue
-			}
-		}
-
-		calloutOpenerMatch := calloutOpenerRe.FindStringSubmatch(line)
-		if calloutOpenerMatch != nil {
-			callout = calloutOpenerMatch[1]
-			inCallout = true
-			continue
-		}
-
 		contentLines = append(contentLines, line)
-	}
-
-	if inCallout {
-		log.Fatal("Unclosed callout")
 	}
 
 	uuidString, ok := properties["id"]
@@ -64,9 +41,8 @@ func (b *Block) ParseSourceLines() {
 
 	b.ID = uuidString
 	b.Properties = &properties
-	b.Callout = callout
 	content := strings.Join(contentLines, "\n")
-	b.Content = content
+	b.Content = BlockContentFromRawSource(content)
 
 	// parse children
 	for _, child := range b.Children {
