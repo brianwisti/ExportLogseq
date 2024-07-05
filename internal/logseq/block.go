@@ -5,17 +5,18 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 type PropertyMap map[string]string
 type Block struct {
-	ID          string       `json:"id"`
-	Content     BlockContent `json:"content"`
-	Properties  *PropertyMap `json:"properties,omitempty"`
-	SourceLines []string     `json:"-"`
-	Depth       int          `json:"-"`
-	Position    int          `json:"-"`
-	Children    []*Block     `json:"children,omitempty"`
+	ID          string        `json:"id"`
+	Content     *BlockContent `json:"content"`
+	Properties  *PropertyMap  `json:"properties,omitempty"`
+	SourceLines []string      `json:"-"`
+	Depth       int           `json:"-"`
+	Position    int           `json:"-"`
+	Children    []*Block      `json:"children,omitempty"`
 }
 
 func (b *Block) ParseSourceLines() {
@@ -42,7 +43,12 @@ func (b *Block) ParseSourceLines() {
 	b.ID = uuidString
 	b.Properties = &properties
 	content := strings.Join(contentLines, "\n")
-	b.Content = BlockContentFromRawSource(content)
+	blockContent := BlockContentFromRawSource(content)
+	linkCount := len(blockContent.PageLinks)
+	if linkCount > 0 {
+		log.Info("Block ", b.ID, " has ", len(blockContent.PageLinks), " links")
+	}
+	b.Content = blockContent
 
 	// parse children
 	for _, child := range b.Children {

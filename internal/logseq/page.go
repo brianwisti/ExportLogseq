@@ -10,6 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/gosimple/slug"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,6 +22,8 @@ type PageLine struct {
 type Page struct {
 	Name        string   `json:"name"`
 	PathInGraph string   `json:"-"`
+	PathInSite  string   `json:"path"`
+	Kind        string   `json:"kind"`
 	FullPath    string   `json:"-"`
 	Blocks      []*Block `json:"blocks"`
 }
@@ -46,6 +49,13 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 		return Page{}, errors.New("calculating path in graph: " + err.Error())
 	}
 
+	nameSteps := strings.Split(fullPageName, "/")
+	slugSteps := []string{}
+	for _, step := range nameSteps {
+		slugSteps = append(slugSteps, slug.Make(step))
+	}
+	pathInSite := strings.Join(slugSteps, "/")
+
 	// Process each line of fullPageName
 	file, err := os.Open(pageFile)
 	if err != nil {
@@ -66,8 +76,10 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 	page := Page{
 		Name:        fullPageName,
 		PathInGraph: pathInGraph,
+		PathInSite:  pathInSite,
 		FullPath:    pageFile,
 		Blocks:      blocks,
+		Kind:        "page",
 	}
 	page.ParseBlocks()
 
