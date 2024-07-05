@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,6 +36,10 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 	baseName := filepath.Base(pageFile)
 	fullPageFileName := strings.ReplaceAll(baseName, "___", "/")
 	fullPageName := strings.TrimSuffix(fullPageFileName, ".md")
+	fullPageName, decodeErr := url.QueryUnescape(fullPageName)
+	if decodeErr != nil {
+		return Page{}, errors.New("decoding page name: " + decodeErr.Error())
+	}
 
 	pathInGraph, err := filepath.Rel(graphPath, pageFile)
 	if err != nil {
