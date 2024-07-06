@@ -9,7 +9,7 @@ import (
 	"github.com/lpernett/godotenv"
 	log "github.com/sirupsen/logrus"
 
-	"export-logseq/internal/logseq"
+	"export-logseq/logseq"
 )
 
 func main() {
