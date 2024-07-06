@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 )
 
 type PropertyMap map[string]string
@@ -44,10 +43,6 @@ func (b *Block) ParseSourceLines() {
 	b.Properties = &properties
 	content := strings.Join(contentLines, "\n")
 	blockContent := BlockContentFromRawSource(content)
-	linkCount := len(blockContent.PageLinks)
-	if linkCount > 0 {
-		log.Info("Block ", b.ID, " has ", len(blockContent.PageLinks), " links")
-	}
 	b.Content = blockContent
 
 	// parse children

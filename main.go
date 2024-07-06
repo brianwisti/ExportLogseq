@@ -40,7 +40,7 @@ func (g *Graph) PutPagesInContext() {
 }
 
 func (g *Graph) prepPageForSite(page *logseq.Page) {
-	log.Info("Assigning links for ", page.Name)
+	log.Debug("Assigning links for ", page.Name)
 	for _, block := range page.Blocks {
 		g.prepBlockForSite(block)
 	}
@@ -51,7 +51,7 @@ func (g *Graph) prepBlockForSite(block *logseq.Block) {
 		link := block.Content.PageLinks[i]
 		if targetPage, ok := g.Pages[link.Url]; ok {
 			permalink := "/" + targetPage.PathInSite
-			log.Info("Linking ", block.ID, " to ", permalink)
+			log.Debug("Linking ", block.ID, " to ", permalink)
 			mdLink := "[" + link.Title + "](" + permalink + ")"
 			block.Content.Markdown = strings.Replace(block.Content.Markdown, link.Raw, mdLink, -1)
 		}
