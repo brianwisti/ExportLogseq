@@ -77,3 +77,32 @@ func TestProperty_IsPageLink(t *testing.T) {
 		assert.Equal(t, tt.want, got)
 	}
 }
+
+func TestPropertyMap_Get(t *testing.T) {
+	pm := logseq.NewPropertyMap()
+	propName := "test"
+	propValue := "value"
+	pm.Set(propName, propValue)
+
+	prop, ok := pm.Get(propName)
+	assert.True(t, ok)
+	assert.Equal(t, propValue, prop.Value)
+}
+
+func TestPropertyMap_Get_NotFound(t *testing.T) {
+	pm := logseq.NewPropertyMap()
+	prop, ok := pm.Get("test")
+	assert.False(t, ok)
+	assert.Nil(t, prop)
+}
+
+func TestPropertyMap_Set(t *testing.T) {
+	pm := logseq.NewPropertyMap()
+	propName := "test"
+	propValue := "value"
+	pm.Set(propName, propValue)
+
+	prop, ok := pm.Get(propName)
+	assert.True(t, ok)
+	assert.Equal(t, propValue, prop.Value)
+}

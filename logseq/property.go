@@ -1,11 +1,14 @@
 package logseq
 
-import "strings"
+import (
+	"encoding/json"
+	"strings"
+)
 
 // Property represents a property of a block in a Logseq graph.
 type Property struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name  string
+	Value string
 }
 
 // String returns the value of the property as a string.
@@ -33,4 +36,36 @@ func (p *Property) IsPageLink() bool {
 	return strings.HasPrefix(p.Value, "[[") && strings.HasSuffix(p.Value, "]]")
 }
 
-// type PropertyMap map[string]*Property
+type PropertyMap struct {
+	Properties map[string]*Property
+}
+
+func NewPropertyMap() *PropertyMap {
+	return &PropertyMap{
+		Properties: map[string]*Property{},
+	}
+}
+
+func (pm *PropertyMap) Get(name string) (*Property, bool) {
+	if pm.Properties[name] == nil {
+		return nil, false
+	}
+
+	return pm.Properties[name], true
+}
+
+func (pm *PropertyMap) Set(name string, value string) {
+	pm.Properties[name] = &Property{
+		Name:  name,
+		Value: value,
+	}
+}
+
+func (pm *PropertyMap) MarshalJSON() ([]byte, error) {
+	propsMap := map[string]string{}
+	for name, prop := range pm.Properties {
+		propsMap[name] = prop.String()
+	}
+
+	return json.Marshal(&propsMap)
+}

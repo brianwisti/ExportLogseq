@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type PropertyMap map[string]string
 type Block struct {
 	ID          string        `json:"id"`
 	Content     *BlockContent `json:"content"`
@@ -21,26 +20,30 @@ type Block struct {
 func (b *Block) ParseSourceLines() {
 	propertyRe := regexp.MustCompile("^([a-zA-Z][a-zA-Z0-9_-]*):: (.*)")
 	contentLines := []string{}
-	properties := make(PropertyMap)
+	properties := NewPropertyMap()
 
 	for _, line := range b.SourceLines {
 		propertyMatch := propertyRe.FindStringSubmatch(line)
 		if propertyMatch != nil {
 			prop_name, prop_value := propertyMatch[1], propertyMatch[2]
-			properties[prop_name] = prop_value
+			properties.Set(prop_name, prop_value)
 			continue
 		}
 
 		contentLines = append(contentLines, line)
 	}
 
-	uuidString, ok := properties["id"]
-	if !ok {
-		uuidString = uuid.New().String()
+	uuidString := uuid.New().String()
+	idProp, _ := properties.Get("id")
+
+	if idProp != nil {
+		uuidString = idProp.Value
+	} else {
+		properties.Set("id", uuidString)
 	}
 
 	b.ID = uuidString
-	b.Properties = &properties
+	b.Properties = properties
 	content := strings.Join(contentLines, "\n")
 	blockContent := BlockContentFromRawSource(content)
 	b.Content = blockContent
