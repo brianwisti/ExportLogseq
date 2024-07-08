@@ -9,13 +9,31 @@ import (
 	"github.com/yuin/goldmark"
 )
 
+// PageExistsError is returned when a page is added to a graph that already has a page with the same name.
+type PageExistsError struct {
+	PageName string
+}
+
+func (e PageExistsError) Error() string {
+	return "page already exists: " + e.PageName
+}
+
 type Graph struct {
 	GraphDir   string
 	Pages      map[string]*Page `json:"pages"`
 	AssetPaths []string         `json:"-"`
 }
 
+func NewGraph() *Graph {
+	return &Graph{
+		Pages: map[string]*Page{},
+	}
+}
+
 func LoadGraph(graphDir string) *Graph {
+	graph := NewGraph()
+	graph.GraphDir = graphDir
+
 	configFile := filepath.Join(graphDir, "logseq", "config.edn")
 	logseqConfig, err := LoadConfig(configFile)
 	if err != nil {
@@ -33,7 +51,6 @@ func LoadGraph(graphDir string) *Graph {
 
 	assetsDir := filepath.Join(graphDir, "assets")
 	log.Info("Assets directory:", assetsDir)
-	assetPaths := []string{}
 	assetFiles, err := filepath.Glob(filepath.Join(assetsDir, "*.*"))
 	if err != nil {
 		log.Fatal("listing asset files:", err)
@@ -45,7 +62,7 @@ func LoadGraph(graphDir string) *Graph {
 			log.Fatal("calculating relative path for asset:", err)
 		}
 
-		assetPaths = append(assetPaths, relPath)
+		graph.AssetPaths = append(graph.AssetPaths, relPath)
 	}
 
 	if err != nil {
@@ -59,14 +76,16 @@ func LoadGraph(graphDir string) *Graph {
 		log.Fatal("listing page files:", err)
 	}
 
-	pages := map[string]*Page{}
-
 	for _, pageFile := range pageFiles {
 		page, err := LoadPage(pageFile, pagesDir)
 		if err != nil {
 			log.Fatalf("loading page %s: %v", pageFile, err)
 		}
-		pages[page.Name] = &page
+
+		err = graph.AddPage(&page)
+		if err != nil {
+			log.Fatalf("adding page %s: %v", pageFile, err)
+		}
 	}
 
 	journalsDir := filepath.Join(graphDir, "journals")
@@ -81,14 +100,26 @@ func LoadGraph(graphDir string) *Graph {
 		if err != nil {
 			log.Fatalf("loading journal %s: %v", journalFile, err)
 		}
-		pages[page.Name] = &page
+
+		err = graph.AddPage(&page)
+		if err != nil {
+			log.Fatalf("adding journal %s: %v", journalFile, err)
+		}
 	}
 
-	return &Graph{
-		GraphDir:   graphDir,
-		Pages:      pages,
-		AssetPaths: assetPaths,
+	return graph
+}
+
+// Add a single page to the graph.
+func (g *Graph) AddPage(page *Page) error {
+	_, pageExists := g.Pages[page.Name]
+	if pageExists {
+		return PageExistsError{page.Name}
 	}
+
+	g.Pages[page.Name] = page
+
+	return nil
 }
 
 // Assign Page.kind of "section" based on pages whose names are prefixes of other page names.

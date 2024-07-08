@@ -22,16 +22,20 @@ type PageLine struct {
 
 type Page struct {
 	Name        string   `json:"name"`
-	PathInGraph string   `json:"-"`
 	PathInSite  string   `json:"path"`
+	PathInGraph string   `json:"-"`
 	Kind        string   `json:"kind"`
 	Root        *Block   `json:"root"`
 	AllBlocks   []*Block `json:"-"`
 }
 
 func NewEmptyPage() Page {
+	root := NewEmptyBlock()
+
 	return Page{
-		Kind: "page",
+		Kind:      "page",
+		Root:      root,
+		AllBlocks: []*Block{root},
 	}
 }
 
