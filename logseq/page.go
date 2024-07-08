@@ -107,6 +107,12 @@ func (p *Page) InContext(Graph) (string, error) {
 	return "/" + p.PathInSite, nil
 }
 
+// IsPublic returns true if the page root is public.
+func (p *Page) IsPublic() bool {
+	return p.Root.IsPublic()
+}
+
+// Properties returns the root block's properties.
 func (p *Page) Properties() *PropertyMap {
 	return p.Root.Properties
 }

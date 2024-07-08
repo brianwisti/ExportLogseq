@@ -27,6 +27,32 @@ func TestPage_InContext(t *testing.T) {
 	assert.Equal(t, "/test-page", got)
 }
 
+func TestPage_HasPublicBlocks_Default(t *testing.T) {
+	page := logseq.NewEmptyPage()
+
+	assert.False(t, page.IsPublic())
+}
+
+func TestPage_HasPublicBlocks_FromRoot(t *testing.T) {
+	isPublicTests := []struct {
+		PropValue string
+		want      bool
+	}{
+		{"true", true},
+		{"false", false},
+		{"", false},
+	}
+
+	page := logseq.NewEmptyPage()
+	for _, tt := range isPublicTests {
+		page.Root.Properties.Set("public", tt.PropValue)
+
+		assert.Equal(t, tt.want, page.IsPublic())
+	}
+
+	assert.False(t, page.IsPublic())
+}
+
 func TestPage_Properties_Empty(t *testing.T) {
 	page := logseq.NewEmptyPage()
 	pageProps := page.Properties()
