@@ -8,28 +8,27 @@ import (
 )
 
 type Block struct {
-	ID          string        `json:"id"`
-	Content     *BlockContent `json:"content"`
-	Properties  *PropertyMap  `json:"properties,omitempty"`
-	SourceLines []string      `json:"-"`
-	Depth       int           `json:"-"`
-	Position    int           `json:"-"`
-	Children    []*Block      `json:"children,omitempty"`
+	ID         string        `json:"id"`
+	Content    *BlockContent `json:"content"`
+	Properties *PropertyMap  `json:"properties,omitempty"`
+	Depth      int           `json:"-"`
+	Children   []*Block      `json:"children,omitempty"`
 }
 
 func NewEmptyBlock() *Block {
 	return &Block{
+		ID:         uuid.New().String(),
 		Content:    EmptyBlockContent(),
 		Properties: NewPropertyMap(),
 	}
 }
 
-func (b *Block) ParseSourceLines() {
+func NewBlock(sourceLines []string, depth int) *Block {
 	propertyRe := regexp.MustCompile("^([a-zA-Z][a-zA-Z0-9_-]*):: (.*)")
 	contentLines := []string{}
 	properties := NewPropertyMap()
 
-	for _, line := range b.SourceLines {
+	for _, line := range sourceLines {
 		propertyMatch := propertyRe.FindStringSubmatch(line)
 		if propertyMatch != nil {
 			prop_name, prop_value := propertyMatch[1], propertyMatch[2]
@@ -49,15 +48,14 @@ func (b *Block) ParseSourceLines() {
 		properties.Set("id", uuidString)
 	}
 
-	b.ID = uuidString
-	b.Properties = properties
 	content := strings.Join(contentLines, "\n")
 	blockContent := BlockContentFromRawSource(content)
-	b.Content = blockContent
 
-	// parse children
-	for _, child := range b.Children {
-		child.ParseSourceLines()
+	return &Block{
+		ID:         uuidString,
+		Depth:      depth,
+		Content:    blockContent,
+		Properties: properties,
 	}
 }
 

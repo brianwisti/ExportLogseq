@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
@@ -24,25 +25,26 @@ type Page struct {
 	PathInGraph string   `json:"-"`
 	PathInSite  string   `json:"path"`
 	Kind        string   `json:"kind"`
-	FullPath    string   `json:"-"`
 	Root        *Block   `json:"root"`
 	AllBlocks   []*Block `json:"-"`
-}
-
-func (p *Page) ParseBlocks() {
-	for i := 0; i < len(p.AllBlocks); i++ {
-		block := p.AllBlocks[i]
-		block.ParseSourceLines()
-	}
 }
 
 func LoadPage(pageFile string, graphPath string) (Page, error) {
 	baseName := filepath.Base(pageFile)
 	fullPageFileName := strings.ReplaceAll(baseName, "___", "/")
 	fullPageName := strings.TrimSuffix(fullPageFileName, ".md")
-	fullPageName, decodeErr := url.QueryUnescape(fullPageName)
-	if decodeErr != nil {
-		return Page{}, errors.New("decoding page name: " + decodeErr.Error())
+	journalDateRe := regexp.MustCompile(`^\d{4}_\d{2}_\d{2}$`)
+	titleIsJournalDate := journalDateRe.MatchString(fullPageName)
+
+	if titleIsJournalDate {
+		fullPageName = strings.Replace(fullPageName, "_", "-", -1)
+	} else {
+		escapedName, decodeErr := url.QueryUnescape(fullPageName)
+		if decodeErr != nil {
+			return Page{}, errors.New("decoding page name: " + decodeErr.Error())
+		}
+
+		fullPageName = escapedName
 	}
 
 	pathInGraph, err := filepath.Rel(graphPath, pageFile)
@@ -74,7 +76,7 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 		return Page{}, errors.New("finding blocks: " + err.Error())
 	}
 	if len(blocks) == 0 {
-		log.Warn("No root block found in page: ", pageFile)
+		log.Warn("No root block found in page: ", fullPageName)
 		blocks = []*Block{NewEmptyBlock()}
 	}
 
@@ -84,12 +86,10 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 		Name:        fullPageName,
 		PathInGraph: pathInGraph,
 		PathInSite:  pathInSite,
-		FullPath:    pageFile,
 		AllBlocks:   blocks,
 		Root:        rootBlock,
 		Kind:        "page",
 	}
-	page.ParseBlocks()
 
 	return page, nil
 }
@@ -133,14 +133,9 @@ func findBlocks(lines []PageLine) ([]*Block, error) {
 
 		if strings.HasPrefix(line.Content, branchBlockOpener) {
 			// Remember the current block.
-			block := Block{
-				SourceLines: currentBlockLines,
-				Depth:       currentIndent,
-				Position:    len(blocks),
-			}
-
-			blocks = append(blocks, &block)
-			blockStack = placeBlock(&block, blockStack)
+			block := NewBlock(currentBlockLines, currentIndent)
+			blocks = append(blocks, block)
+			blockStack = placeBlock(block, blockStack)
 
 			// Adjust for the root block not having a branch block marker.
 			line.Indent = line.Indent + 1
@@ -171,13 +166,9 @@ func findBlocks(lines []PageLine) ([]*Block, error) {
 
 	// Remember the last block.
 	if len(currentBlockLines) > 0 {
-		block := Block{
-			SourceLines: currentBlockLines,
-			Depth:       currentIndent,
-			Position:    len(blocks),
-		}
-		blocks = append(blocks, &block)
-		placeBlock(&block, blockStack)
+		block := NewBlock(currentBlockLines, currentIndent)
+		blocks = append(blocks, block)
+		placeBlock(block, blockStack)
 	}
 	log.Debug("Blocks: ", blocks)
 
