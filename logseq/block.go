@@ -13,6 +13,7 @@ type Block struct {
 	Content    *BlockContent `json:"content"`
 	Properties *PropertyMap  `json:"properties,omitempty"`
 	Depth      int           `json:"-"`
+	Parent     *Block        `json:"-"`
 	Children   []*Block      `json:"children,omitempty"`
 }
 
@@ -64,6 +65,7 @@ func NewBlock(page *Page, sourceLines []string, depth int) *Block {
 
 func (b *Block) AddChild(child *Block) {
 	b.Children = append(b.Children, child)
+	child.Parent = b
 }
 
 func (b *Block) InContext(g Graph) (string, error) {
@@ -73,6 +75,18 @@ func (b *Block) InContext(g Graph) (string, error) {
 	}
 
 	return pagePath + "#" + b.ID, nil
+}
+
+func (b *Block) IsPublic() bool {
+	if publicProp, ok := b.Properties.Get("public"); ok {
+		return publicProp.Bool()
+	}
+
+	if b.Parent != nil {
+		return b.Parent.IsPublic()
+	}
+
+	return false
 }
 
 type BlockStack struct {

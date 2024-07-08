@@ -107,6 +107,24 @@ func (p *Page) InContext(Graph) (string, error) {
 	return "/" + p.PathInSite, nil
 }
 
+func (p *Page) Properties() *PropertyMap {
+	return p.Root.Properties
+}
+
+// SetRoot assign's page root block and sets AllBlocks to root's branches
+func (p *Page) SetRoot(root *Block) {
+	p.Root = root
+	p.AllBlocks = []*Block{}
+	p.addTree(root)
+}
+
+func (p *Page) addTree(block *Block) {
+	p.AllBlocks = append(p.AllBlocks, block)
+	for _, child := range block.Children {
+		p.addTree(child)
+	}
+}
+
 func loadPageLines(file *os.File) ([]PageLine, error) {
 	scanner := bufio.NewScanner(file)
 	var lines []PageLine
