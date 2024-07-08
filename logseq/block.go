@@ -9,6 +9,7 @@ import (
 
 type Block struct {
 	ID         string        `json:"id"`
+	Page       *Page         `json:"-"` // Page that contains this block
 	Content    *BlockContent `json:"content"`
 	Properties *PropertyMap  `json:"properties,omitempty"`
 	Depth      int           `json:"-"`
@@ -23,7 +24,7 @@ func NewEmptyBlock() *Block {
 	}
 }
 
-func NewBlock(sourceLines []string, depth int) *Block {
+func NewBlock(page *Page, sourceLines []string, depth int) *Block {
 	propertyRe := regexp.MustCompile("^([a-zA-Z][a-zA-Z0-9_-]*):: (.*)")
 	contentLines := []string{}
 	properties := NewPropertyMap()
@@ -48,19 +49,30 @@ func NewBlock(sourceLines []string, depth int) *Block {
 		properties.Set("id", uuidString)
 	}
 
-	content := strings.Join(contentLines, "\n")
-	blockContent := BlockContentFromRawSource(content)
-
-	return &Block{
+	block := Block{
 		ID:         uuidString,
+		Page:       page,
 		Depth:      depth,
-		Content:    blockContent,
 		Properties: properties,
 	}
+	content := strings.Join(contentLines, "\n")
+	blockContent := BlockContentFromRawSource(&block, content)
+	block.Content = blockContent
+
+	return &block
 }
 
 func (b *Block) AddChild(child *Block) {
 	b.Children = append(b.Children, child)
+}
+
+func (b *Block) InContext(g Graph) (string, error) {
+	pagePath, err := b.Page.InContext(g)
+	if err != nil {
+		return "Setting block context", err
+	}
+
+	return pagePath + "#" + b.ID, nil
 }
 
 type BlockStack struct {

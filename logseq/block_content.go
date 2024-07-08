@@ -2,13 +2,8 @@ package logseq
 
 import "regexp"
 
-type Link struct {
-	Raw   string `json:"raw"`
-	Url   string `json:"url"`
-	Title string `json:"title"`
-}
-
 type BlockContent struct {
+	Block         *Block  `json:"block"` // Block that contains this content
 	Markdown      string  `json:"markdown"`
 	HTML          string  `json:"html"`
 	PageLinks     []*Link `json:"page_links"`
@@ -19,46 +14,55 @@ func EmptyBlockContent() *BlockContent {
 	return &BlockContent{}
 }
 
-func BlockContentFromRawSource(rawSource string) *BlockContent {
+func BlockContentFromRawSource(block *Block, rawSource string) *BlockContent {
 	content := BlockContent{
-		Markdown:      rawSource,
-		PageLinks:     findPageLinks(rawSource),
-		ResourceLinks: findResourceLinks(rawSource),
+		Block:    block,
+		Markdown: rawSource,
 	}
+
+	content.findResourceLinks()
+	content.findPageLinks()
 
 	return &content
 }
 
-func findPageLinks(content string) []*Link {
+func (bc *BlockContent) findPageLinks() {
 	pageLinkRe := regexp.MustCompile(`\[\[(.*?)\]\]`)
 	pageLinks := []*Link{}
 
-	for _, match := range pageLinkRe.FindAllStringSubmatch(content, -1) {
+	for _, match := range pageLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
 		raw, pageName := match[0], match[1]
+		// This is more of a bookmark, to be replaced with an actual Page link by the graph.
 		link := Link{
-			Raw:   raw,
-			Url:   pageName,
-			Title: pageName,
+			Raw:       raw,
+			LinksFrom: bc.Block,
+			LinksTo:   &Page{Name: pageName},
+			Label:     pageName,
+			IsEmbed:   false,
 		}
 		pageLinks = append(pageLinks, &link)
 	}
 
-	return pageLinks
+	bc.PageLinks = pageLinks
 }
 
-func findResourceLinks(content string) []*Link {
-	resourceLinkRe := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`)
+func (bc *BlockContent) findResourceLinks() {
+	resourceLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\((.*?)\)`)
 	resourceLinks := []*Link{}
 
-	for _, match := range resourceLinkRe.FindAllStringSubmatch(content, -1) {
-		resourceTitle, resourceUrl := match[1], match[2]
+	for _, match := range resourceLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
+		raw, isEmbed, resourceTitle, resourceUrl := match[0], match[1], match[2], match[3]
+		resource := ExternalResource{Uri: resourceUrl}
 		link := Link{
-			Url:   resourceUrl,
-			Title: resourceTitle,
+			Raw:       raw,
+			LinksFrom: bc.Block,
+			LinksTo:   resource,
+			Label:     resourceTitle,
+			IsEmbed:   isEmbed == "!",
 		}
 
 		resourceLinks = append(resourceLinks, &link)
 	}
 
-	return resourceLinks
+	bc.ResourceLinks = resourceLinks
 }

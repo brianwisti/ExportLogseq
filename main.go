@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	log.SetLevel(log.InfoLevel)
 	start := time.Now()
 	log.Info("Initializing...")
 	dotEnvErr := godotenv.Load()

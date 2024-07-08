@@ -111,30 +111,47 @@ func (g *Graph) PutPagesInContext() {
 }
 
 func (g *Graph) prepPageForSite(page *Page) {
-	log.Debug("Assigning links for ", page.Name)
+	blockCount := len(page.AllBlocks)
+	log.Debug("Prepping ", page.Name, " with ", blockCount, " blocks")
+
 	for _, block := range page.AllBlocks {
 		g.prepBlockForSite(block)
 	}
 }
 
 func (g *Graph) prepBlockForSite(block *Block) {
+	blockMarkdown := block.Content.Markdown
+	log.Debug("Prepping block ", block.ID, " with ", len(block.Content.PageLinks), " page links")
+	log.Debug("Initial block Markdown: ", blockMarkdown)
 	for i := 0; i < len(block.Content.PageLinks); i++ {
 		link := block.Content.PageLinks[i]
-		if targetPage, ok := g.Pages[link.Url]; ok {
-			permalink := "/" + targetPage.PathInSite
+		log.Debug("Raw link: ", link.Raw)
+		linkTarget := link.LinksTo.(*Page)
+
+		if targetPage, ok := g.Pages[linkTarget.Name]; ok {
+			// update the link to point to the actual page if needed
+			if linkTarget != targetPage {
+				link.LinksTo = targetPage
+			}
+
+			permalink, err := targetPage.InContext(*g)
+			if err != nil {
+				log.Fatal("getting permalink for ", targetPage.Name, ":", err)
+			}
+
 			log.Debug("Linking ", block.ID, " to ", permalink)
-			mdLink := "[" + link.Title + "](" + permalink + ")"
-			block.Content.Markdown = strings.Replace(block.Content.Markdown, link.Raw, mdLink, -1)
+			mdLink := "[" + link.Label + "](" + permalink + ")"
+			blockMarkdown = strings.Replace(blockMarkdown, link.Raw, mdLink, 1)
 		}
 	}
+
+	log.Debug("Final block Markdown: ", blockMarkdown)
+
+	block.Content.Markdown = blockMarkdown
 
 	var buf bytes.Buffer
 	if err := goldmark.Convert([]byte(block.Content.Markdown), &buf); err != nil {
 		log.Fatal("converting markdown to HTML:", err)
 	}
 	block.Content.HTML = buf.String()
-
-	for _, childBlock := range block.Children {
-		g.prepBlockForSite(childBlock)
-	}
 }

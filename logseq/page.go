@@ -29,6 +29,12 @@ type Page struct {
 	AllBlocks   []*Block `json:"-"`
 }
 
+func NewEmptyPage() Page {
+	return Page{
+		Kind: "page",
+	}
+}
+
 func LoadPage(pageFile string, graphPath string) (Page, error) {
 	baseName := filepath.Base(pageFile)
 	fullPageFileName := strings.ReplaceAll(baseName, "___", "/")
@@ -71,7 +77,14 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 		return Page{}, errors.New("loading page lines: " + err.Error())
 	}
 
-	blocks, err := findBlocks(lines)
+	page := Page{
+		Name:        fullPageName,
+		PathInGraph: pathInGraph,
+		PathInSite:  pathInSite,
+		Kind:        "page",
+	}
+
+	blocks, err := findBlocks(&page, lines)
 	if err != nil {
 		return Page{}, errors.New("finding blocks: " + err.Error())
 	}
@@ -80,18 +93,14 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 		blocks = []*Block{NewEmptyBlock()}
 	}
 
-	rootBlock := blocks[0]
-
-	page := Page{
-		Name:        fullPageName,
-		PathInGraph: pathInGraph,
-		PathInSite:  pathInSite,
-		AllBlocks:   blocks,
-		Root:        rootBlock,
-		Kind:        "page",
-	}
+	page.Root = blocks[0]
+	page.AllBlocks = blocks
 
 	return page, nil
+}
+
+func (p *Page) InContext(Graph) (string, error) {
+	return "/" + p.PathInSite, nil
 }
 
 func loadPageLines(file *os.File) ([]PageLine, error) {
@@ -116,7 +125,7 @@ func loadPageLines(file *os.File) ([]PageLine, error) {
 	return lines, nil
 }
 
-func findBlocks(lines []PageLine) ([]*Block, error) {
+func findBlocks(page *Page, lines []PageLine) ([]*Block, error) {
 	branchBlockOpener := "- "
 	branchBlockContinuer := "  "
 	blocks := []*Block{}
@@ -133,7 +142,7 @@ func findBlocks(lines []PageLine) ([]*Block, error) {
 
 		if strings.HasPrefix(line.Content, branchBlockOpener) {
 			// Remember the current block.
-			block := NewBlock(currentBlockLines, currentIndent)
+			block := NewBlock(page, currentBlockLines, currentIndent)
 			blocks = append(blocks, block)
 			blockStack = placeBlock(block, blockStack)
 
@@ -166,7 +175,7 @@ func findBlocks(lines []PageLine) ([]*Block, error) {
 
 	// Remember the last block.
 	if len(currentBlockLines) > 0 {
-		block := NewBlock(currentBlockLines, currentIndent)
+		block := NewBlock(page, currentBlockLines, currentIndent)
 		blocks = append(blocks, block)
 		placeBlock(block, blockStack)
 	}
