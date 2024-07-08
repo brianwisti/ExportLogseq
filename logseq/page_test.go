@@ -21,19 +21,52 @@ func TestPage_InContext(t *testing.T) {
 	page := logseq.NewEmptyPage()
 	page.Name = "Test Page"
 	page.PathInSite = "test-page"
-	got, err := page.InContext(*logseq.NewGraph())
+	page.PathInGraph = "/test-page"
+
+	graph := *logseq.NewGraph()
+	graph.AddPage(&page)
+	got, err := page.InContext(graph)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "/test-page", got)
 }
 
-func TestPage_HasPublicBlocks_Default(t *testing.T) {
+func TestPage_InContext_WithGraphError(t *testing.T) {
+	page := logseq.NewEmptyPage()
+	page.Name = "Test Page"
+	page.PathInSite = "test-page"
+	page.PathInGraph = "/test-page"
+
+	graph := *logseq.NewGraph()
+	_, err := page.InContext(graph)
+
+	assert.ErrorIs(t, err, logseq.DisconnectedPageError{PageName: "Test Page"})
+}
+
+func TestPage_IsPlaceholder(t *testing.T) {
+	isPlaceholderTests := []struct {
+		PathInGraph string
+		want        bool
+	}{
+		{"", true},
+		{"test-page", false},
+	}
+
+	for _, tt := range isPlaceholderTests {
+		page := logseq.NewEmptyPage()
+		page.PathInGraph = tt.PathInGraph
+
+		assert.Equal(t, tt.want, page.IsPlaceholder())
+	}
+}
+
+func TestPage_IsPublic_Default(t *testing.T) {
 	page := logseq.NewEmptyPage()
 
 	assert.False(t, page.IsPublic())
 }
 
-func TestPage_HasPublicBlocks_FromRoot(t *testing.T) {
+func TestPage_IsPublic_FromRoot(t *testing.T) {
 	isPublicTests := []struct {
 		PropValue string
 		want      bool

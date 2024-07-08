@@ -154,30 +154,30 @@ func (g *Graph) prepBlockForSite(block *Block) {
 	blockMarkdown := block.Content.Markdown
 	log.Debug("Prepping block ", block.ID, " with ", len(block.Content.PageLinks), " page links")
 	log.Debug("Initial block Markdown: ", blockMarkdown)
+
 	for i := 0; i < len(block.Content.PageLinks); i++ {
 		link := block.Content.PageLinks[i]
 		log.Debug("Raw link: ", link.Raw)
+		linkString := "*" + link.Label + "*"
 		linkTarget := link.LinksTo.(*Page)
-
-		if targetPage, ok := g.Pages[linkTarget.Name]; ok {
-			// update the link to point to the actual page if needed
-			if linkTarget != targetPage {
-				link.LinksTo = targetPage
+		permalink, err := linkTarget.InContext(*g)
+		if err != nil {
+			if err, ok := err.(DisconnectedPageError); ok {
+				log.Warnf("Disconnected page: ->%s<-", err.PageName)
+			} else {
+				log.Fatal("getting permalink for ", linkTarget.Name, ":", err)
 			}
-
-			permalink, err := targetPage.InContext(*g)
-			if err != nil {
-				log.Fatal("getting permalink for ", targetPage.Name, ":", err)
-			}
-
-			log.Debug("Linking ", block.ID, " to ", permalink)
-			mdLink := "[" + link.Label + "](" + permalink + ")"
-			blockMarkdown = strings.Replace(blockMarkdown, link.Raw, mdLink, 1)
 		}
+
+		if permalink != "" {
+			log.Debug("Linking ", block.ID, " to ", permalink)
+			linkString = "[" + link.Label + "](" + permalink + ")"
+		}
+
+		blockMarkdown = strings.Replace(blockMarkdown, link.Raw, linkString, 1)
 	}
 
 	log.Debug("Final block Markdown: ", blockMarkdown)
-
 	block.Content.Markdown = blockMarkdown
 
 	var buf bytes.Buffer

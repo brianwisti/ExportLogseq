@@ -33,10 +33,12 @@ func (bc *BlockContent) findPageLinks() {
 	for _, match := range pageLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
 		raw, pageName := match[0], match[1]
 		// This is more of a bookmark, to be replaced with an actual Page link by the graph.
+		target := NewEmptyPage()
+		target.Name = pageName
 		link := Link{
 			Raw:       raw,
 			LinksFrom: bc.Block,
-			LinksTo:   &Page{Name: pageName},
+			LinksTo:   &target,
 			Label:     pageName,
 			IsEmbed:   false,
 		}

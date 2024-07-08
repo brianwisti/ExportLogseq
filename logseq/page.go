@@ -15,6 +15,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type DisconnectedPageError struct {
+	PageName string
+}
+
+func (p DisconnectedPageError) Error() string {
+	return "page not found in graph: " + p.PageName
+}
+
 type PageLine struct {
 	Content string
 	Indent  int
@@ -103,8 +111,18 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 	return page, nil
 }
 
-func (p *Page) InContext(Graph) (string, error) {
+func (p *Page) InContext(graph Graph) (string, error) {
+	_, ok := graph.Pages[p.Name]
+	if !ok {
+		return "", DisconnectedPageError{PageName: p.Name}
+	}
+
 	return "/" + p.PathInSite, nil
+}
+
+// IsPlaceholder returns true if the page is not a file on disk.
+func (p *Page) IsPlaceholder() bool {
+	return p.PathInGraph == ""
 }
 
 // IsPublic returns true if the page root is public.
