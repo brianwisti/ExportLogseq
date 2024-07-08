@@ -1,6 +1,7 @@
 package logseq_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,8 @@ func TestGraph_AddPage(t *testing.T) {
 	page.PathInSite = "test-page"
 	err := graph.AddPage(&page)
 	assert.NoError(t, err)
-	addedPage, ok := graph.Pages[page.Name]
+	pageKey := strings.ToLower(page.Name)
+	addedPage, ok := graph.Pages[pageKey]
 
 	assert.True(t, ok)
 	assert.Equal(t, &page, addedPage)
@@ -46,6 +48,18 @@ func TestGraph_FindPage(t *testing.T) {
 	page.PathInSite = "test-page"
 	_ = graph.AddPage(&page)
 	foundPage, err := graph.FindPage("Test Page")
+
+	assert.NoError(t, err)
+	assert.Equal(t, &page, foundPage)
+}
+
+func TestGraph_FindPage_CaseInsensitive(t *testing.T) {
+	graph := logseq.NewGraph()
+	page := logseq.NewEmptyPage()
+	page.Name = "Test Page"
+	page.PathInSite = "test-page"
+	_ = graph.AddPage(&page)
+	foundPage, err := graph.FindPage("test page")
 
 	assert.NoError(t, err)
 	assert.Equal(t, &page, foundPage)

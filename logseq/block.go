@@ -20,7 +20,7 @@ type Block struct {
 func NewEmptyBlock() *Block {
 	return &Block{
 		ID:         uuid.New().String(),
-		Content:    EmptyBlockContent(),
+		Content:    NewBlockContent(),
 		Properties: NewPropertyMap(),
 	}
 }

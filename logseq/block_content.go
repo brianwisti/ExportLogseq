@@ -10,8 +10,11 @@ type BlockContent struct {
 	ResourceLinks []*Link `json:"resource_links"`
 }
 
-func EmptyBlockContent() *BlockContent {
-	return &BlockContent{}
+func NewBlockContent() *BlockContent {
+	return &BlockContent{
+		PageLinks:     []*Link{},
+		ResourceLinks: []*Link{},
+	}
 }
 
 func BlockContentFromRawSource(block *Block, rawSource string) *BlockContent {
@@ -26,9 +29,18 @@ func BlockContentFromRawSource(block *Block, rawSource string) *BlockContent {
 	return &content
 }
 
+func (bc *BlockContent) IsCodeBlock() bool {
+	codeBlockRe := regexp.MustCompile("```")
+	return codeBlockRe.MatchString(bc.Markdown)
+}
+
 func (bc *BlockContent) findPageLinks() {
-	pageLinkRe := regexp.MustCompile(`\[\[(.*?)\]\]`)
+	pageLinkRe := regexp.MustCompile(`\[\[(.+?)\]\]`)
 	pageLinks := []*Link{}
+
+	if bc.IsCodeBlock() {
+		return
+	}
 
 	for _, match := range pageLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
 		raw, pageName := match[0], match[1]

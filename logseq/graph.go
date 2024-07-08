@@ -121,19 +121,21 @@ func LoadGraph(graphDir string) *Graph {
 
 // Add a single page to the graph.
 func (g *Graph) AddPage(page *Page) error {
-	_, pageExists := g.Pages[page.Name]
+	pageKey := strings.ToLower(page.Name)
+	_, pageExists := g.Pages[pageKey]
 	if pageExists {
 		return PageExistsError{page.Name}
 	}
 
-	g.Pages[page.Name] = page
+	g.Pages[pageKey] = page
 
 	return nil
 }
 
 // FindPage returns a page by name or alias
 func (g *Graph) FindPage(name string) (*Page, error) {
-	page, ok := g.Pages[name]
+	pageKey := strings.ToLower(name)
+	page, ok := g.Pages[pageKey]
 	if ok {
 		return page, nil
 	}
@@ -190,7 +192,12 @@ func (g *Graph) prepBlockForSite(block *Block) {
 		permalink, err := linkTarget.InContext(*g)
 		if err != nil {
 			if _, ok := err.(DisconnectedPageError); ok {
-				log.Warnf("Block %v links to disconnected page: %v", block.ID, linkTarget.Name)
+				log.Warnf("Block %v placeholder link: >%v<", block.ID, link.Label)
+
+				if linkTarget.Name == "" {
+					// Probably a bug in link-finding logic, so log the block content.
+					log.Info("Block content: ", block.Content.Markdown)
+				}
 			} else {
 				log.Fatalf("Linking page: %v", err)
 			}
