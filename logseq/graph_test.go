@@ -38,3 +38,36 @@ func TestGraph_AddPage_WithExistingPage(t *testing.T) {
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, logseq.PageExistsError{PageName: page.Name})
 }
+
+func TestGraph_FindPage(t *testing.T) {
+	graph := logseq.NewGraph()
+	page := logseq.NewEmptyPage()
+	page.Name = "Test Page"
+	page.PathInSite = "test-page"
+	_ = graph.AddPage(&page)
+	foundPage, err := graph.FindPage("Test Page")
+
+	assert.NoError(t, err)
+	assert.Equal(t, &page, foundPage)
+}
+
+func TestGraph_FindPage_NotFound(t *testing.T) {
+	graph := logseq.NewGraph()
+	_, err := graph.FindPage("Test Page")
+
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, logseq.PageNotFoundError{PageName: "Test Page"})
+}
+
+func TestGraph_FindPage_WithAlias(t *testing.T) {
+	graph := logseq.NewGraph()
+	page := logseq.NewEmptyPage()
+	page.Name = "Test Page"
+	page.PathInSite = "test-page"
+	page.Root.Properties.Set("alias", "alias")
+	_ = graph.AddPage(&page)
+	foundPage, err := graph.FindPage("alias")
+
+	assert.NoError(t, err)
+	assert.Equal(t, &page, foundPage)
+}

@@ -9,6 +9,15 @@ import (
 	"github.com/yuin/goldmark"
 )
 
+// PageNotFoundError is returned when a page is not found in a graph by name or alias.
+type PageNotFoundError struct {
+	PageName string
+}
+
+func (e PageNotFoundError) Error() string {
+	return "page not found: " + e.PageName
+}
+
 // PageExistsError is returned when a page is added to a graph that already has a page with the same name.
 type PageExistsError struct {
 	PageName string
@@ -122,6 +131,24 @@ func (g *Graph) AddPage(page *Page) error {
 	return nil
 }
 
+// FindPage returns a page by name or alias
+func (g *Graph) FindPage(name string) (*Page, error) {
+	page, ok := g.Pages[name]
+	if ok {
+		return page, nil
+	}
+
+	for _, page := range g.Pages {
+		for _, alias := range page.Aliases() {
+			if alias == name {
+				return page, nil
+			}
+		}
+	}
+
+	return nil, PageNotFoundError{name}
+}
+
 // Assign Page.kind of "section" based on pages whose names are prefixes of other page names.
 func (g *Graph) PutPagesInContext() {
 	for thisName, thisPage := range g.Pages {
@@ -162,10 +189,10 @@ func (g *Graph) prepBlockForSite(block *Block) {
 		linkTarget := link.LinksTo.(*Page)
 		permalink, err := linkTarget.InContext(*g)
 		if err != nil {
-			if err, ok := err.(DisconnectedPageError); ok {
-				log.Warnf("Disconnected page: ->%s<-", err.PageName)
+			if _, ok := err.(DisconnectedPageError); ok {
+				log.Warnf("Block %v links to disconnected page: %v", block.ID, linkTarget.Name)
 			} else {
-				log.Fatal("getting permalink for ", linkTarget.Name, ":", err)
+				log.Fatalf("Linking page: %v", err)
 			}
 		}
 

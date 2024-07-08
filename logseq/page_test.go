@@ -17,6 +17,33 @@ func TestPage_NewEmptyPage(t *testing.T) {
 	assert.Contains(t, page.AllBlocks, page.Root)
 }
 
+func TestPage_Aliases_Empty(t *testing.T) {
+	page := logseq.NewEmptyPage()
+	aliases := page.Aliases()
+
+	assert.NotNil(t, aliases)
+	assert.Empty(t, aliases)
+}
+
+func TestPage_Aliases_FromProperties(t *testing.T) {
+	aliasesTests := []struct {
+		PropValue string
+		want      []string
+	}{
+		{"a", []string{"a"}},
+		{"a, b", []string{"a", "b"}},
+		{"a, b, c", []string{"a", "b", "c"}},
+	}
+
+	for _, tt := range aliasesTests {
+		page := logseq.NewEmptyPage()
+		page.Root.Properties.Set("alias", tt.PropValue)
+		aliases := page.Aliases()
+
+		assert.ElementsMatch(t, tt.want, aliases)
+	}
+}
+
 func TestPage_InContext(t *testing.T) {
 	page := logseq.NewEmptyPage()
 	page.Name = "Test Page"

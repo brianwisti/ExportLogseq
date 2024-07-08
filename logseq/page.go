@@ -111,9 +111,20 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 	return page, nil
 }
 
-func (p *Page) InContext(graph Graph) (string, error) {
-	_, ok := graph.Pages[p.Name]
+// Aliases returns alternate names for this page.
+func (p *Page) Aliases() []string {
+	aliasesProp, ok := p.Root.Properties.Get("alias")
 	if !ok {
+		return []string{}
+	}
+
+	return aliasesProp.List()
+}
+
+// InContext returns the path of the page in the site.
+func (p *Page) InContext(graph Graph) (string, error) {
+	_, err := graph.FindPage(p.Name)
+	if err != nil {
 		return "", DisconnectedPageError{PageName: p.Name}
 	}
 
