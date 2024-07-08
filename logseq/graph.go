@@ -2,6 +2,7 @@ package logseq
 
 import (
 	"bytes"
+	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -9,7 +10,62 @@ import (
 )
 
 type Graph struct {
-	Pages map[string]*Page `json:"pages"`
+	GraphDir string
+	Pages    map[string]*Page `json:"pages"`
+}
+
+func LoadGraph(graphDir string) *Graph {
+	configFile := filepath.Join(graphDir, "logseq", "config.edn")
+	logseqConfig, err := LoadConfig(configFile)
+	if err != nil {
+		log.Fatal("loading Logseq config:", err)
+	}
+
+	// We're specifically catering to my graph first.
+	if logseqConfig.FileNameFormat != "triple-lowbar" {
+		log.Fatal("Unsupported file name format:", logseqConfig.FileNameFormat)
+	}
+
+	if logseqConfig.PreferredFormat != "markdown" {
+		log.Fatal("Unsupported preferred format:", logseqConfig.PreferredFormat)
+	}
+
+	pagesDir := filepath.Join(graphDir, "pages")
+	log.Info("Pages directory:", pagesDir)
+	pageFiles, err := filepath.Glob(filepath.Join(pagesDir, "*.md"))
+	if err != nil {
+		log.Fatal("listing page files:", err)
+	}
+
+	pages := map[string]*Page{}
+
+	for _, pageFile := range pageFiles {
+		page, err := LoadPage(pageFile, pagesDir)
+		if err != nil {
+			log.Fatalf("loading page %s: %v", pageFile, err)
+		}
+		pages[page.Name] = &page
+	}
+
+	journalsDir := filepath.Join(graphDir, "journals")
+	log.Info("Journals directory:", journalsDir)
+	journalFiles, err := filepath.Glob(filepath.Join(journalsDir, "*.md"))
+	if err != nil {
+		log.Fatal("listing journal files:", err)
+	}
+
+	for _, journalFile := range journalFiles {
+		page, err := LoadPage(journalFile, journalsDir)
+		if err != nil {
+			log.Fatalf("loading journal %s: %v", journalFile, err)
+		}
+		pages[page.Name] = &page
+	}
+
+	return &Graph{
+		GraphDir: graphDir,
+		Pages:    pages,
+	}
 }
 
 // Assign Page.kind of "section" based on pages whose names are prefixes of other page names.
