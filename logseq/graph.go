@@ -10,8 +10,9 @@ import (
 )
 
 type Graph struct {
-	GraphDir string
-	Pages    map[string]*Page `json:"pages"`
+	GraphDir   string
+	Pages      map[string]*Page `json:"pages"`
+	AssetPaths []string         `json:"-"`
 }
 
 func LoadGraph(graphDir string) *Graph {
@@ -28,6 +29,27 @@ func LoadGraph(graphDir string) *Graph {
 
 	if logseqConfig.PreferredFormat != "markdown" {
 		log.Fatal("Unsupported preferred format:", logseqConfig.PreferredFormat)
+	}
+
+	assetsDir := filepath.Join(graphDir, "assets")
+	log.Info("Assets directory:", assetsDir)
+	assetPaths := []string{}
+	assetFiles, err := filepath.Glob(filepath.Join(assetsDir, "*.*"))
+	if err != nil {
+		log.Fatal("listing asset files:", err)
+	}
+
+	for _, assetFile := range assetFiles {
+		relPath, err := filepath.Rel(assetsDir, assetFile)
+		if err != nil {
+			log.Fatal("calculating relative path for asset:", err)
+		}
+
+		assetPaths = append(assetPaths, relPath)
+	}
+
+	if err != nil {
+		log.Fatal("listing asset files:", err)
 	}
 
 	pagesDir := filepath.Join(graphDir, "pages")
@@ -63,8 +85,9 @@ func LoadGraph(graphDir string) *Graph {
 	}
 
 	return &Graph{
-		GraphDir: graphDir,
-		Pages:    pages,
+		GraphDir:   graphDir,
+		Pages:      pages,
+		AssetPaths: assetPaths,
 	}
 }
 
