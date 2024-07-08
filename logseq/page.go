@@ -25,12 +25,13 @@ type Page struct {
 	PathInSite  string   `json:"path"`
 	Kind        string   `json:"kind"`
 	FullPath    string   `json:"-"`
-	Blocks      []*Block `json:"blocks"`
+	Root        *Block   `json:"root"`
+	AllBlocks   []*Block `json:"-"`
 }
 
 func (p *Page) ParseBlocks() {
-	for i := 0; i < len(p.Blocks); i++ {
-		block := p.Blocks[i]
+	for i := 0; i < len(p.AllBlocks); i++ {
+		block := p.AllBlocks[i]
 		block.ParseSourceLines()
 	}
 }
@@ -72,13 +73,20 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 	if err != nil {
 		return Page{}, errors.New("finding blocks: " + err.Error())
 	}
+	if len(blocks) == 0 {
+		log.Warn("No root block found in page: ", pageFile)
+		blocks = []*Block{NewEmptyBlock()}
+	}
+
+	rootBlock := blocks[0]
 
 	page := Page{
 		Name:        fullPageName,
 		PathInGraph: pathInGraph,
 		PathInSite:  pathInSite,
 		FullPath:    pageFile,
-		Blocks:      blocks,
+		AllBlocks:   blocks,
+		Root:        rootBlock,
 		Kind:        "page",
 	}
 	page.ParseBlocks()
@@ -131,9 +139,7 @@ func findBlocks(lines []PageLine) ([]*Block, error) {
 				Position:    len(blocks),
 			}
 
-			if block.Depth == 0 {
-				blocks = append(blocks, &block)
-			}
+			blocks = append(blocks, &block)
 			blockStack = placeBlock(&block, blockStack)
 
 			// Adjust for the root block not having a branch block marker.
@@ -170,9 +176,9 @@ func findBlocks(lines []PageLine) ([]*Block, error) {
 			Depth:       currentIndent,
 			Position:    len(blocks),
 		}
+		blocks = append(blocks, &block)
 		placeBlock(&block, blockStack)
 	}
-	log.Debug("Block stack: ", blockStack)
 	log.Debug("Blocks: ", blocks)
 
 	return blocks, nil

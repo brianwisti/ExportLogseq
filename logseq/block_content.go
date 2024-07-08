@@ -15,6 +15,10 @@ type BlockContent struct {
 	ResourceLinks []*Link `json:"resource_links"`
 }
 
+func EmptyBlockContent() *BlockContent {
+	return &BlockContent{}
+}
+
 func BlockContentFromRawSource(rawSource string) *BlockContent {
 	content := BlockContent{
 		Markdown:      rawSource,

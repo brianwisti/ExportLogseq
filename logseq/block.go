@@ -17,6 +17,13 @@ type Block struct {
 	Children    []*Block      `json:"children,omitempty"`
 }
 
+func NewEmptyBlock() *Block {
+	return &Block{
+		Content:    EmptyBlockContent(),
+		Properties: NewPropertyMap(),
+	}
+}
+
 func (b *Block) ParseSourceLines() {
 	propertyRe := regexp.MustCompile("^([a-zA-Z][a-zA-Z0-9_-]*):: (.*)")
 	contentLines := []string{}

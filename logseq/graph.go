@@ -33,7 +33,7 @@ func (g *Graph) PutPagesInContext() {
 
 func (g *Graph) prepPageForSite(page *Page) {
 	log.Debug("Assigning links for ", page.Name)
-	for _, block := range page.Blocks {
+	for _, block := range page.AllBlocks {
 		g.prepBlockForSite(block)
 	}
 }
