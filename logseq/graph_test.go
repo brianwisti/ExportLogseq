@@ -170,7 +170,8 @@ func TestGraph_ResourceLinks(t *testing.T) {
 	page.Name = "Test Page"
 	page.PathInSite = "test-page"
 	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	link, _ := page.Root.Content.AddLinkToResource(resource)
+	label := "Example"
+	link, _ := page.Root.Content.AddLinkToResource(resource, label)
 	graph.AddPage(&page)
 	links := graph.ResourceLinks()
 

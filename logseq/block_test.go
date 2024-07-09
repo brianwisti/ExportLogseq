@@ -96,7 +96,8 @@ func TestBlock_ResourceLinks_Empty(t *testing.T) {
 func TestBlock_ResourceLinks(t *testing.T) {
 	block := logseq.NewEmptyBlock()
 	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	link, _ := block.Content.AddLinkToResource(resource)
+	label := "Example"
+	link, _ := block.Content.AddLinkToResource(resource, label)
 	links := block.ResourceLinks()
 
 	assert.Contains(t, links, link)

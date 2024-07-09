@@ -61,7 +61,7 @@ func (bc *BlockContent) IsCodeBlock() bool {
 }
 
 // AddLinkToResource adds a link to an external resource to the block content.
-func (bc *BlockContent) AddLinkToResource(resource ExternalResource) (*Link, error) {
+func (bc *BlockContent) AddLinkToResource(resource ExternalResource, label string) (*Link, error) {
 	existingLink := bc.FindLinkToResource(resource)
 	if existingLink != nil {
 		return nil, ErrorDuplicateResourceLink{Resource: resource}
@@ -70,6 +70,7 @@ func (bc *BlockContent) AddLinkToResource(resource ExternalResource) (*Link, err
 	link := Link{
 		LinksFrom: bc.Block,
 		LinksTo:   resource,
+		Label:     label,
 		IsEmbed:   false,
 	}
 
@@ -79,8 +80,8 @@ func (bc *BlockContent) AddLinkToResource(resource ExternalResource) (*Link, err
 }
 
 // AddEmbeddedLinkToResource adds an embedded link to an external resource.
-func (bc *BlockContent) AddEmbeddedLinkToResource(resource ExternalResource) (*Link, error) {
-	link, err := bc.AddLinkToResource(resource)
+func (bc *BlockContent) AddEmbeddedLinkToResource(resource ExternalResource, label string) (*Link, error) {
+	link, err := bc.AddLinkToResource(resource, label)
 	if err != nil {
 		return nil, err
 	}
@@ -121,19 +122,19 @@ func (bc *BlockContent) findResourceLinks() {
 	resourceLinks := []*Link{}
 
 	for _, match := range resourceLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
-		raw, isEmbed, resourceTitle, resourceUrl := match[0], match[1], match[2], match[3]
-		log.Debug("Found resource link: ", raw, isEmbed, resourceTitle, resourceUrl)
+		raw, isEmbed, label, resourceUrl := match[0], match[1], match[2], match[3]
+		log.Debug("Found resource link: ", raw, isEmbed, label, resourceUrl)
 		resource := ExternalResource{Uri: resourceUrl}
 
 		if isEmbed == "!" {
-			_, err := bc.AddEmbeddedLinkToResource(resource)
+			_, err := bc.AddEmbeddedLinkToResource(resource, label)
 			if err != nil {
 				log.Fatalf("Adding embedded link to resource: %v", err)
 			}
 			continue
 		}
 
-		_, err := bc.AddLinkToResource(resource)
+		_, err := bc.AddLinkToResource(resource, label)
 		if err != nil {
 			log.Fatalf("Adding link to resource: %v", err)
 		}

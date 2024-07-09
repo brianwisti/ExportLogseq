@@ -28,20 +28,23 @@ func TestNewBlockContent(t *testing.T) {
 func TestBlockContent_AddLinkToResource(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
 	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	link, err := content.AddLinkToResource(resource)
+	label := "Example"
+	link, err := content.AddLinkToResource(resource, label)
 
 	assert.NoError(t, err)
 	assert.NotEmpty(t, content.ResourceLinks)
 	assert.Equal(t, resource, link.LinksTo)
+	assert.Equal(t, label, link.Label)
 	assert.False(t, link.IsEmbed)
 }
 
 func TestBlockContent_AddLinkToResource_Duplicate(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
 	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	content.AddLinkToResource(resource)
+	label := "Example"
+	content.AddLinkToResource(resource, label)
 	resourceCount := len(content.ResourceLinks)
-	link, err := content.AddLinkToResource(resource)
+	link, err := content.AddLinkToResource(resource, label)
 
 	assert.Nil(t, link)
 	assert.Error(t, err)
@@ -52,7 +55,8 @@ func TestBlockContent_AddLinkToResource_Duplicate(t *testing.T) {
 func TestBlockContent_AddEmbeddedLinkToResource(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
 	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	link, err := content.AddEmbeddedLinkToResource(resource)
+	label := "Example"
+	link, err := content.AddEmbeddedLinkToResource(resource, label)
 
 	assert.NoError(t, err)
 	assert.NotEmpty(t, content.ResourceLinks)
@@ -63,7 +67,8 @@ func TestBlockContent_AddEmbeddedLinkToResource(t *testing.T) {
 func TestBlockContent_FindLinkToResource(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
 	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	content.AddLinkToResource(resource)
+	label := "Example"
+	content.AddLinkToResource(resource, label)
 	link := content.FindLinkToResource(resource)
 
 	assert.Equal(t, resource, link.LinksTo)

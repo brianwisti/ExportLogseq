@@ -137,7 +137,8 @@ func TestPage_ResourceLinks(t *testing.T) {
 	page := logseq.NewEmptyPage()
 	block := logseq.NewEmptyBlock()
 	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	link, _ := block.Content.AddLinkToResource(resource)
+	label := "Example"
+	link, _ := block.Content.AddLinkToResource(resource, label)
 	page.SetRoot(block)
 	links := page.ResourceLinks()
 
