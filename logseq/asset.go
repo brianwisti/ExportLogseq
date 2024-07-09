@@ -3,7 +3,6 @@ package logseq
 // Asset represents a non-note resource in a Logseq graph.
 type Asset struct {
 	PathInGraph string `json:"path_in_graph"`
-	IsLinked    bool   `json:"is_linked"`
 }
 
 // NewAsset creates a new Asset with the given path in the graph.

@@ -25,6 +25,15 @@ func TestNewBlockContent(t *testing.T) {
 	assert.Equal(t, block, content.Block)
 }
 
+func TestBlockContent_SetMarkdown(t *testing.T) {
+	content := logseq.NewEmptyBlockContent()
+	markdown := "test"
+	err := content.SetMarkdown(markdown)
+
+	assert.NoError(t, err)
+	assert.Equal(t, markdown, content.Markdown)
+}
+
 func TestBlockContent_AddLinkToResource(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
 	resource, label := ExternalResource(), LinkLabel()

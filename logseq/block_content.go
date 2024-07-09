@@ -3,6 +3,7 @@ package logseq
 import (
 	"regexp"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,10 +28,7 @@ func NewEmptyBlockContent() *BlockContent {
 func NewBlockContent(block *Block, rawSource string) *BlockContent {
 	content := NewEmptyBlockContent()
 	content.Block = block
-	content.Markdown = rawSource
-
-	content.findResourceLinks()
-	content.findPageLinks()
+	content.SetMarkdown(rawSource)
 
 	return content
 }
@@ -82,6 +80,29 @@ func (bc *BlockContent) AddEmbeddedLinkToResource(resource ExternalResource, lab
 	return link, nil
 }
 
+// SetMarkdown sets the markdown content of the block.
+func (bc *BlockContent) SetMarkdown(markdown string) error {
+	bc.Markdown = markdown
+
+	err := bc.findLinks()
+	if err != nil {
+		return errors.Wrap(err, "finding links")
+	}
+
+	return nil
+}
+
+func (bc *BlockContent) findLinks() error {
+	bc.findPageLinks()
+
+	err := bc.findResourceLinks()
+	if err != nil {
+		return errors.Wrap(err, "finding resource links")
+	}
+
+	return nil
+}
+
 func (bc *BlockContent) findPageLinks() {
 	pageLinkRe := regexp.MustCompile(`\[\[(.+?)\]\]`)
 	pageLinks := []*Link{}
@@ -108,28 +129,31 @@ func (bc *BlockContent) findPageLinks() {
 	bc.PageLinks = pageLinks
 }
 
-func (bc *BlockContent) findResourceLinks() {
+func (bc *BlockContent) findResourceLinks() error {
 	resourceLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\((.*?)\)`)
 	resourceLinks := []*Link{}
 
 	for _, match := range resourceLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
-		raw, isEmbed, label, resourceUrl := match[0], match[1], match[2], match[3]
-		log.Debug("Found resource link: ", raw, isEmbed, label, resourceUrl)
+		isEmbed, label, resourceUrl := match[1], match[2], match[3]
+		log.Debug("Found resource link: ", match[0], isEmbed, label, resourceUrl)
 		resource := ExternalResource{Uri: resourceUrl}
 
 		if isEmbed == "!" {
 			_, err := bc.AddEmbeddedLinkToResource(resource, label)
 			if err != nil {
-				log.Fatalf("Adding embedded link to resource: %v", err)
+				return errors.Wrap(err, "adding embedded link to resource")
 			}
+
 			continue
 		}
 
 		_, err := bc.AddLinkToResource(resource, label)
 		if err != nil {
-			log.Fatalf("Adding link to resource: %v", err)
+			return errors.Wrap(err, "adding link to resource")
 		}
 	}
 
 	bc.ResourceLinks = resourceLinks
+
+	return nil
 }
