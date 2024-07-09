@@ -12,6 +12,10 @@ func ExternalResource() logseq.ExternalResource {
 	}
 }
 
+func PageName() string {
+	return gofakeit.Word()
+}
+
 func LinkLabel() string {
 	return gofakeit.Word()
 }

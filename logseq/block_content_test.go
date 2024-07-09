@@ -25,13 +25,31 @@ func TestNewBlockContent(t *testing.T) {
 	assert.Equal(t, block, content.Block)
 }
 
-func TestBlockContent_SetMarkdown(t *testing.T) {
+func TestBlockContent_AddLinkToPage(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	markdown := "test"
-	err := content.SetMarkdown(markdown)
+	pageName, label := PageName(), LinkLabel()
+	link, err := content.AddLinkToPage(pageName, label)
 
 	assert.NoError(t, err)
-	assert.Equal(t, markdown, content.Markdown)
+	assert.NotEmpty(t, content.PageLinks)
+	assert.Equal(t, label, link.Label)
+	assert.False(t, link.IsEmbed)
+
+	linkedPage := link.LinksTo.(*logseq.Page)
+	assert.Equal(t, pageName, linkedPage.Name)
+}
+
+func TestBlockContent_AddLinkToPage_Duplicate(t *testing.T) {
+	content := logseq.NewEmptyBlockContent()
+	pageName, label := PageName(), LinkLabel()
+	content.AddLinkToPage(pageName, label)
+	pageCount := len(content.PageLinks)
+	link, err := content.AddLinkToPage(pageName, label)
+
+	assert.Nil(t, link)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, logseq.ErrorDuplicatePageLink{PageName: pageName})
+	assert.Equal(t, pageCount, len(content.PageLinks))
 }
 
 func TestBlockContent_AddLinkToResource(t *testing.T) {
@@ -70,6 +88,16 @@ func TestBlockContent_AddEmbeddedLinkToResource(t *testing.T) {
 	assert.True(t, link.IsEmbed)
 }
 
+func TestBlockContent_FindLinkToPage(t *testing.T) {
+	content := logseq.NewEmptyBlockContent()
+	pageName, label := PageName(), LinkLabel()
+	content.AddLinkToPage(pageName, label)
+	link := content.FindLinkToPage(pageName)
+
+	assert.NotNil(t, link)
+	assert.Equal(t, pageName, link.LinksTo.(*logseq.Page).Name)
+}
+
 func TestBlockContent_FindLinkToResource(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
 	resource, label := ExternalResource(), LinkLabel()
@@ -92,4 +120,13 @@ func TestBlockContent_IsCodeBlock(t *testing.T) {
 		Markdown: codeBlockMarkdown,
 	}
 	assert.True(t, content.IsCodeBlock())
+}
+
+func TestBlockContent_SetMarkdown(t *testing.T) {
+	content := logseq.NewEmptyBlockContent()
+	markdown := "test"
+	err := content.SetMarkdown(markdown)
+
+	assert.NoError(t, err)
+	assert.Equal(t, markdown, content.Markdown)
 }

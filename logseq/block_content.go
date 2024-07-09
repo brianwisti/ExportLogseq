@@ -33,6 +33,18 @@ func NewBlockContent(block *Block, rawSource string) *BlockContent {
 	return content
 }
 
+// FindLinkToPage checks if the block content already links to the page.
+func (bc *BlockContent) FindLinkToPage(pageName string) *Link {
+	for _, link := range bc.PageLinks {
+		target := link.LinksTo.(*Page)
+		if target.Name == pageName {
+			return link
+		}
+	}
+
+	return nil
+}
+
 // FindLinkToResource checks if the block content already links to the external resource.
 func (bc *BlockContent) FindLinkToResource(resource ExternalResource) *Link {
 	for _, link := range bc.ResourceLinks {
@@ -47,6 +59,30 @@ func (bc *BlockContent) FindLinkToResource(resource ExternalResource) *Link {
 func (bc *BlockContent) IsCodeBlock() bool {
 	codeBlockRe := regexp.MustCompile("```")
 	return codeBlockRe.MatchString(bc.Markdown)
+}
+
+// AddLinkToPage adds a link to a page to the block content.
+func (bc *BlockContent) AddLinkToPage(pageName string, label string) (*Link, error) {
+	log.Debugf("Adding link to page: label=%s, target=%s", label, pageName)
+
+	existingLink := bc.FindLinkToPage(pageName)
+	if existingLink != nil {
+		return nil, ErrorDuplicatePageLink{PageName: pageName}
+	}
+
+	// This is more of a bookmark, to be replaced with an actual Page link during InContext.
+	target := NewEmptyPage()
+	target.Name = pageName
+	link := Link{
+		LinksFrom: bc.Block,
+		LinksTo:   &target,
+		Label:     label,
+		IsEmbed:   false,
+	}
+
+	bc.PageLinks = append(bc.PageLinks, &link)
+
+	return &link, nil
 }
 
 // AddLinkToResource adds a link to an external resource to the block content.

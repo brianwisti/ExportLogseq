@@ -133,6 +133,17 @@ func (p *Page) IsPublic() bool {
 	return p.Root.IsPublic()
 }
 
+// PageLinks returns all page links found in the page.
+func (p *Page) PageLinks() []*Link {
+	links := []*Link{}
+
+	for _, block := range p.AllBlocks {
+		links = append(links, block.PageLinks()...)
+	}
+
+	return links
+}
+
 // Properties returns the root block's properties.
 func (p *Page) Properties() *PropertyMap {
 	return p.Root.Properties

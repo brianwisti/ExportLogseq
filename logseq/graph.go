@@ -162,6 +162,17 @@ func (g *Graph) FindPage(name string) (*Page, error) {
 	return nil, PageNotFoundError{name}
 }
 
+// PageLinks returns all page links found in the graph.
+func (g *Graph) PageLinks() []*Link {
+	links := []*Link{}
+
+	for _, page := range g.Pages {
+		links = append(links, page.PageLinks()...)
+	}
+
+	return links
+}
+
 // PublicGraph returns a copy of the graph with only public pages.
 func (g *Graph) PublicGraph() *Graph {
 	publicGraph := NewGraph()

@@ -139,6 +139,25 @@ func TestGraph_FindPage_WithAlias(t *testing.T) {
 	assert.Equal(t, &page, foundPage)
 }
 
+func TestGraph_PageLinks_Empty(t *testing.T) {
+	graph := logseq.NewGraph()
+	links := graph.PageLinks()
+
+	assert.Empty(t, links)
+}
+
+func TestGraph_PageLinks(t *testing.T) {
+	graph := logseq.NewGraph()
+	page := logseq.NewEmptyPage()
+	graph.AddPage(&page)
+	pageName, label := PageName(), LinkLabel()
+	link, _ := page.Root.Content.AddLinkToPage(pageName, label)
+
+	links := graph.PageLinks()
+	assert.NotEmpty(t, links)
+	assert.Contains(t, links, link)
+}
+
 func TestGraph_PublicGraph(t *testing.T) {
 	graph := logseq.NewGraph()
 

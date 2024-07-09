@@ -85,6 +85,23 @@ func TestBlock_IsPublic_OverridesParent(t *testing.T) {
 	assert.True(t, child.IsPublic())
 }
 
+func TestBlock_PageLinks_Empty(t *testing.T) {
+	block := logseq.NewEmptyBlock()
+	links := block.PageLinks()
+
+	assert.NotNil(t, links)
+	assert.Empty(t, links)
+}
+
+func TestBlock_PageLinks(t *testing.T) {
+	block := logseq.NewEmptyBlock()
+	pageName, label := PageName(), LinkLabel()
+	link, _ := block.Content.AddLinkToPage(pageName, label)
+	links := block.PageLinks()
+
+	assert.Contains(t, links, link)
+}
+
 func TestBlock_ResourceLinks_Empty(t *testing.T) {
 	block := logseq.NewEmptyBlock()
 	links := block.ResourceLinks()

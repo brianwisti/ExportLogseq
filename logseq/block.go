@@ -89,6 +89,11 @@ func (b *Block) IsPublic() bool {
 	return false
 }
 
+// PageLinks returns all page links found in the block
+func (b *Block) PageLinks() []*Link {
+	return b.Content.PageLinks
+}
+
 // ResourceLinks returns all resource links found in the block
 func (b *Block) ResourceLinks() []*Link {
 	return b.Content.ResourceLinks

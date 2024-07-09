@@ -113,6 +113,25 @@ func TestPage_IsPublic_FromRoot(t *testing.T) {
 	assert.False(t, page.IsPublic())
 }
 
+func TestPage_PageLinks_Empty(t *testing.T) {
+	page := logseq.NewEmptyPage()
+	pageLinks := page.PageLinks()
+
+	assert.NotNil(t, pageLinks)
+	assert.Empty(t, pageLinks)
+}
+
+func TestPage_PageLinks_FromRoot(t *testing.T) {
+	page := logseq.NewEmptyPage()
+	block := logseq.NewEmptyBlock()
+	pageName, label := PageName(), LinkLabel()
+	link, _ := block.Content.AddLinkToPage(pageName, label)
+	page.SetRoot(block)
+	links := page.PageLinks()
+
+	assert.Contains(t, links, link)
+}
+
 func TestPage_Properties_Empty(t *testing.T) {
 	page := logseq.NewEmptyPage()
 	pageProps := page.Properties()
