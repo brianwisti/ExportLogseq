@@ -9,6 +9,24 @@ import (
 	"github.com/yuin/goldmark"
 )
 
+// AssetExistsError is returned when an asset is added to a graph that already has an asset with the same path.
+type AssetExistsError struct {
+	AssetPath string
+}
+
+func (e AssetExistsError) Error() string {
+	return "asset already added: " + e.AssetPath
+}
+
+// AssetNotFoundError is returned when an asset is not found in a graph by path.
+type AssetNotFoundError struct {
+	AssetPath string
+}
+
+func (e AssetNotFoundError) Error() string {
+	return "asset not found: " + e.AssetPath
+}
+
 // PageNotFoundError is returned when a page is not found in a graph by name or alias.
 type PageNotFoundError struct {
 	PageName string
@@ -24,18 +42,19 @@ type PageExistsError struct {
 }
 
 func (e PageExistsError) Error() string {
-	return "page already exists: " + e.PageName
+	return "page already added: " + e.PageName
 }
 
 type Graph struct {
-	GraphDir   string
-	Pages      map[string]*Page `json:"pages"`
-	AssetPaths []string         `json:"-"`
+	GraphDir string
+	Pages    map[string]*Page  `json:"pages"`
+	Assets   map[string]*Asset `json:"-"`
 }
 
 func NewGraph() *Graph {
 	return &Graph{
-		Pages: map[string]*Page{},
+		Pages:  map[string]*Page{},
+		Assets: map[string]*Asset{},
 	}
 }
 
@@ -71,7 +90,11 @@ func LoadGraph(graphDir string) *Graph {
 			log.Fatal("calculating relative path for asset:", err)
 		}
 
-		graph.AssetPaths = append(graph.AssetPaths, relPath)
+		asset := NewAsset(relPath)
+		err = graph.AddAsset(&asset)
+		if err != nil {
+			log.Fatalf("adding asset %s: %v", assetFile, err)
+		}
 	}
 
 	if err != nil {
@@ -119,6 +142,19 @@ func LoadGraph(graphDir string) *Graph {
 	return graph
 }
 
+// AddAsset adds an asset to the graph.
+func (g *Graph) AddAsset(asset *Asset) error {
+	assetKey := strings.ToLower(asset.PathInGraph)
+	_, assetExists := g.Assets[assetKey]
+	if assetExists {
+		return AssetExistsError{asset.PathInGraph}
+	}
+
+	g.Assets[assetKey] = asset
+
+	return nil
+}
+
 // Add a single page to the graph.
 func (g *Graph) AddPage(page *Page) error {
 	pageKey := strings.ToLower(page.Name)
@@ -130,6 +166,17 @@ func (g *Graph) AddPage(page *Page) error {
 	g.Pages[pageKey] = page
 
 	return nil
+}
+
+// FindAsset returns an asset by path.
+func (g *Graph) FindAsset(path string) (*Asset, error) {
+	assetKey := strings.ToLower(path)
+	asset, ok := g.Assets[assetKey]
+	if ok {
+		return asset, nil
+	}
+
+	return nil, AssetNotFoundError{path}
 }
 
 // FindPage returns a page by name or alias
@@ -151,11 +198,11 @@ func (g *Graph) FindPage(name string) (*Page, error) {
 	return nil, PageNotFoundError{name}
 }
 
-// PublicGraph returns a graph with only public pages.
+// PublicGraph returns a copy of the graph with only public pages.
 func (g *Graph) PublicGraph() *Graph {
 	publicGraph := NewGraph()
 	publicGraph.GraphDir = g.GraphDir
-	publicGraph.AssetPaths = g.AssetPaths
+	publicGraph.Assets = g.Assets
 
 	for _, page := range g.Pages {
 		if page.IsPublic() {

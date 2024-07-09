@@ -13,6 +13,31 @@ func TestGraph_NewGraph(t *testing.T) {
 	graph := logseq.NewGraph()
 
 	assert.NotNil(t, graph)
+	assert.Empty(t, graph.Pages)
+	assert.Empty(t, graph.Assets)
+}
+
+func TestGraph_AddAsset(t *testing.T) {
+	graph := logseq.NewGraph()
+	asset := logseq.NewAsset("assets/test.jpg")
+	err := graph.AddAsset(&asset)
+
+	assert.NoError(t, err)
+	assetKey := strings.ToLower(asset.PathInGraph)
+	addedAsset, ok := graph.Assets[assetKey]
+
+	assert.True(t, ok)
+	assert.Equal(t, &asset, addedAsset)
+}
+
+func TestGraph_AddAsset_WithExistingAsset(t *testing.T) {
+	graph := logseq.NewGraph()
+	asset := logseq.NewAsset("assets/test.jpg")
+	_ = graph.AddAsset(&asset)
+	err := graph.AddAsset(&asset)
+
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, logseq.AssetExistsError{AssetPath: asset.PathInGraph})
 }
 
 func TestGraph_AddPage(t *testing.T) {
@@ -39,6 +64,34 @@ func TestGraph_AddPage_WithExistingPage(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, logseq.PageExistsError{PageName: page.Name})
+}
+
+func TestGraph_FindAsset(t *testing.T) {
+	graph := logseq.NewGraph()
+	asset := logseq.NewAsset("assets/test.jpg")
+	_ = graph.AddAsset(&asset)
+	foundAsset, err := graph.FindAsset("assets/test.jpg")
+
+	assert.NoError(t, err)
+	assert.Equal(t, &asset, foundAsset)
+}
+
+func TestGraph_FindAsset_CaseInsensitive(t *testing.T) {
+	graph := logseq.NewGraph()
+	asset := logseq.NewAsset("assets/test.jpg")
+	_ = graph.AddAsset(&asset)
+	foundAsset, err := graph.FindAsset("ASSETS/TEST.JPG")
+
+	assert.NoError(t, err)
+	assert.Equal(t, &asset, foundAsset)
+}
+
+func TestGraph_FindAsset_NotFound(t *testing.T) {
+	graph := logseq.NewGraph()
+	_, err := graph.FindAsset("assets/test.jpg")
+
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, logseq.AssetNotFoundError{AssetPath: "assets/test.jpg"})
 }
 
 func TestGraph_FindPage(t *testing.T) {
