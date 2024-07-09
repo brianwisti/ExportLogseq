@@ -33,7 +33,7 @@ func main() {
 		log.Fatal("SITE_DIR is not set in .env file or environment variables")
 	}
 
-	graph := logseq.LoadGraph(graphDir)
+	graph := logseq.LoadGraph(graphDir).PublicGraph()
 	graph.PutPagesInContext()
 
 	exportPath := filepath.Join(siteDir, "logseq.json")
@@ -48,5 +48,7 @@ func main() {
 	enc.Encode(graph)
 	log.Info("All done!")
 	elapsed := time.Since(start)
+	pageCount := len(graph.Pages)
+	log.Infof("Exported %d pages", pageCount)
 	log.Infof("Elapsed time: %s", elapsed)
 }

@@ -151,6 +151,21 @@ func (g *Graph) FindPage(name string) (*Page, error) {
 	return nil, PageNotFoundError{name}
 }
 
+// PublicGraph returns a graph with only public pages.
+func (g *Graph) PublicGraph() *Graph {
+	publicGraph := NewGraph()
+	publicGraph.GraphDir = g.GraphDir
+	publicGraph.AssetPaths = g.AssetPaths
+
+	for _, page := range g.Pages {
+		if page.IsPublic() {
+			publicGraph.AddPage(page)
+		}
+	}
+
+	return publicGraph
+}
+
 // Assign Page.kind of "section" based on pages whose names are prefixes of other page names.
 func (g *Graph) PutPagesInContext() {
 	for thisName, thisPage := range g.Pages {

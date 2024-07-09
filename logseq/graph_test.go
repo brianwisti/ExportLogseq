@@ -85,3 +85,28 @@ func TestGraph_FindPage_WithAlias(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, &page, foundPage)
 }
+
+func TestGraph_PublicGraph(t *testing.T) {
+	graph := logseq.NewGraph()
+
+	publicPage := logseq.NewEmptyPage()
+	publicPage.Name = "Test Page"
+	publicPage.PathInSite = "test-page"
+	publicPage.Root.Properties.Set("public", "true")
+	_ = graph.AddPage(&publicPage)
+
+	privatePage := logseq.NewEmptyPage()
+	privatePage.Name = "Private Page"
+	privatePage.PathInSite = "private-page"
+	privatePage.Root.Properties.Set("public", "false")
+	_ = graph.AddPage(&privatePage)
+
+	publicGraph := graph.PublicGraph()
+	foundPage, err := publicGraph.FindPage("Test Page")
+
+	assert.NoError(t, err)
+	assert.Equal(t, &publicPage, foundPage)
+
+	_, err = publicGraph.FindPage("Private Page")
+	assert.Error(t, err)
+}
