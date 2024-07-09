@@ -146,6 +146,17 @@ func (p *Page) Properties() *PropertyMap {
 	return p.Root.Properties
 }
 
+// ResourceLinks returns all resource links found in the page.
+func (p *Page) ResourceLinks() []*Link {
+	links := []*Link{}
+
+	for _, block := range p.AllBlocks {
+		links = append(links, block.ResourceLinks()...)
+	}
+
+	return links
+}
+
 // SetRoot assign's page root block and sets AllBlocks to root's branches
 func (p *Page) SetRoot(root *Block) {
 	p.Root = root

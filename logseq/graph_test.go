@@ -163,3 +163,17 @@ func TestGraph_PublicGraph(t *testing.T) {
 	_, err = publicGraph.FindPage("Private Page")
 	assert.Error(t, err)
 }
+
+func TestGraph_ResourceLinks(t *testing.T) {
+	graph := logseq.NewGraph()
+	page := logseq.NewEmptyPage()
+	page.Name = "Test Page"
+	page.PathInSite = "test-page"
+	resource := logseq.ExternalResource{Uri: "https://example.com"}
+	link, _ := page.Root.Content.AddLinkToResource(resource)
+	graph.AddPage(&page)
+	links := graph.ResourceLinks()
+
+	assert.NotEmpty(t, links)
+	assert.Contains(t, links, link)
+}

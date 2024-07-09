@@ -133,6 +133,17 @@ func TestPage_Properties_FromRoot(t *testing.T) {
 	assert.Equal(t, "123", got.Value)
 }
 
+func TestPage_ResourceLinks(t *testing.T) {
+	page := logseq.NewEmptyPage()
+	block := logseq.NewEmptyBlock()
+	resource := logseq.ExternalResource{Uri: "https://example.com"}
+	link, _ := block.Content.AddLinkToResource(resource)
+	page.SetRoot(block)
+	links := page.ResourceLinks()
+
+	assert.Contains(t, links, link)
+}
+
 func TestPage_SetRoot(t *testing.T) {
 	page := logseq.NewEmptyPage()
 	oldRoot := page.Root

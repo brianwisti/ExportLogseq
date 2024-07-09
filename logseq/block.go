@@ -89,6 +89,11 @@ func (b *Block) IsPublic() bool {
 	return false
 }
 
+// ResourceLinks returns all resource links found in the block
+func (b *Block) ResourceLinks() []*Link {
+	return b.Content.ResourceLinks
+}
+
 type BlockStack struct {
 	Blocks []*Block
 }

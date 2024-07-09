@@ -232,6 +232,19 @@ func (g *Graph) PutPagesInContext() {
 	}
 }
 
+// ResourceLinks returns all resource links found in the graph.
+func (g *Graph) ResourceLinks() []*Link {
+	links := []*Link{}
+
+	for _, page := range g.Pages {
+		log.Debug("Checking resource links in ", page.Name)
+		links = append(links, page.ResourceLinks()...)
+	}
+	log.Debug("Resource links found: ", len(links))
+
+	return links
+}
+
 func (g *Graph) prepPageForSite(page *Page) {
 	blockCount := len(page.AllBlocks)
 	log.Debug("Prepping ", page.Name, " with ", blockCount, " blocks")
