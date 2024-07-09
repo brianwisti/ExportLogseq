@@ -20,7 +20,7 @@ type Block struct {
 func NewEmptyBlock() *Block {
 	return &Block{
 		ID:         uuid.New().String(),
-		Content:    NewBlockContent(),
+		Content:    NewEmptyBlockContent(),
 		Properties: NewPropertyMap(),
 	}
 }
@@ -57,7 +57,7 @@ func NewBlock(page *Page, sourceLines []string, depth int) *Block {
 		Properties: properties,
 	}
 	content := strings.Join(contentLines, "\n")
-	blockContent := BlockContentFromRawSource(&block, content)
+	blockContent := NewBlockContent(&block, content)
 	block.Content = blockContent
 
 	return &block
