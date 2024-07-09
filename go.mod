@@ -3,6 +3,7 @@ module export-logseq
 go 1.22.4
 
 require (
+	github.com/brianvoe/gofakeit/v7 v7.0.4
 	github.com/charmbracelet/log v0.4.0
 	github.com/google/uuid v1.6.0
 	github.com/gosimple/slug v1.14.0

@@ -27,8 +27,7 @@ func TestNewBlockContent(t *testing.T) {
 
 func TestBlockContent_AddLinkToResource(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	label := "Example"
+	resource, label := ExternalResource(), LinkLabel()
 	link, err := content.AddLinkToResource(resource, label)
 
 	assert.NoError(t, err)
@@ -40,8 +39,7 @@ func TestBlockContent_AddLinkToResource(t *testing.T) {
 
 func TestBlockContent_AddLinkToResource_Duplicate(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	label := "Example"
+	resource, label := ExternalResource(), LinkLabel()
 	content.AddLinkToResource(resource, label)
 	resourceCount := len(content.ResourceLinks)
 	link, err := content.AddLinkToResource(resource, label)
@@ -54,8 +52,7 @@ func TestBlockContent_AddLinkToResource_Duplicate(t *testing.T) {
 
 func TestBlockContent_AddEmbeddedLinkToResource(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	label := "Example"
+	resource, label := ExternalResource(), LinkLabel()
 	link, err := content.AddEmbeddedLinkToResource(resource, label)
 
 	assert.NoError(t, err)
@@ -66,8 +63,7 @@ func TestBlockContent_AddEmbeddedLinkToResource(t *testing.T) {
 
 func TestBlockContent_FindLinkToResource(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	label := "Example"
+	resource, label := ExternalResource(), LinkLabel()
 	content.AddLinkToResource(resource, label)
 	link := content.FindLinkToResource(resource)
 
@@ -76,7 +72,7 @@ func TestBlockContent_FindLinkToResource(t *testing.T) {
 
 func TestBlockContent_FindLinkToResource_NotFound(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	resource := logseq.ExternalResource{Uri: "https://example.com"}
+	resource := ExternalResource()
 
 	assert.Nil(t, content.FindLinkToResource(resource))
 }

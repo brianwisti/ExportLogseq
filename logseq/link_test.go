@@ -9,16 +9,10 @@ import (
 )
 
 func TestExternalResource_InContext(t *testing.T) {
-	uri := "https://example.com"
-	resource := logseq.ExternalResource{
-		Uri: uri,
-	}
+	graph := logseq.NewGraph()
+	resource := ExternalResource()
+	path, err := resource.InContext(*graph)
 
-	g := logseq.Graph{
-		Pages: map[string]*logseq.Page{},
-	}
-
-	path, err := resource.InContext(g)
 	assert.NoError(t, err)
-	assert.Equal(t, uri, path)
+	assert.Equal(t, resource.Uri, path)
 }
