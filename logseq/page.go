@@ -15,14 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type DisconnectedPageError struct {
-	PageName string
-}
-
-func (p DisconnectedPageError) Error() string {
-	return "page not found in graph: " + p.PageName
-}
-
 type PageLine struct {
 	Content string
 	Indent  int

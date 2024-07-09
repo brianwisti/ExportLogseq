@@ -6,15 +6,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ErrorDuplicateResourceLink is returned when a block content already has a link to a resource and another link is added.
-type ErrorDuplicateResourceLink struct {
-	Resource ExternalResource
-}
-
-func (e ErrorDuplicateResourceLink) Error() string {
-	return "duplicate resource link: " + e.Resource.Uri
-}
-
 // BlockContent represents the content of a block in a Logseq graph.
 type BlockContent struct {
 	Block         *Block  `json:"block"` // Block that contains this content
