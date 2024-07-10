@@ -143,6 +143,23 @@ func (g *Graph) FindAsset(path string) (*Asset, error) {
 	return nil, AssetNotFoundError{path}
 }
 
+// FindLinksToPage returns all links to a Page.
+func (g *Graph) FindLinksToPage(page *Page) []*Link {
+	log.Info("Finding links in graph to: ", page)
+	links := []*Link{}
+
+	for _, link := range g.PageLinks() {
+		linkTarget := link.LinksTo.(*Page)
+		log.Debug("Checking link from ", link.LinksFrom, " to ", linkTarget)
+		if linkTarget.Name == page.Name {
+			log.Debug("Found link to ", page.Name, " in ", link.LinksFrom)
+			links = append(links, link)
+		}
+	}
+
+	return links
+}
+
 // FindPage returns a page by name or alias
 func (g *Graph) FindPage(name string) (*Page, error) {
 	pageKey := strings.ToLower(name)

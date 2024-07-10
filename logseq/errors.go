@@ -8,6 +8,15 @@ func (p DisconnectedPageError) Error() string {
 	return "page not found in graph: " + p.PageName
 }
 
+// ErrorDuplicateAssetLink is returned when a block content already has a link to an asset and another link is added.
+type ErrorDuplicateAssetLink struct {
+	AssetPath string
+}
+
+func (e ErrorDuplicateAssetLink) Error() string {
+	return "duplicate asset link: " + e.AssetPath
+}
+
 // ErrorDuplicatePageLink is returned when a block content already has a link to a page and another link is added.
 type ErrorDuplicatePageLink struct {
 	PageName string

@@ -25,12 +25,50 @@ func TestNewBlockContent(t *testing.T) {
 	assert.Equal(t, block, content.Block)
 }
 
-func TestBlockContent_AddLinkToPage(t *testing.T) {
+func TestBlockContent_AddLinkToAsset(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
+	assetPath := "assets/test.jpg"
+	label := LinkLabel()
+	link, err := content.AddLinkToAsset(assetPath, label)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, link)
+}
+
+func TestBlockContent_AddLinkToAsset_Duplicate(t *testing.T) {
+	content := logseq.NewEmptyBlockContent()
+	assetPath := "assets/test.jpg"
+	label := LinkLabel()
+	content.AddLinkToAsset(assetPath, label)
+	assetCount := len(content.ResourceLinks)
+	link, err := content.AddLinkToAsset(assetPath, label)
+
+	assert.Nil(t, link)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, logseq.ErrorDuplicateAssetLink{AssetPath: assetPath})
+	assert.Equal(t, assetCount, len(content.ResourceLinks))
+}
+
+func TestBlockContent_AddEmbeddedLinkToAsset(t *testing.T) {
+	content := logseq.NewEmptyBlockContent()
+	assetPath := "assets/test.jpg"
+	label := LinkLabel()
+	link, err := content.AddEmbeddedLinkToAsset(assetPath, label)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, link)
+	assert.True(t, link.IsEmbed)
+}
+
+func TestBlockContent_AddLinkToPage(t *testing.T) {
+	fromPage := Page()
+	content := fromPage.Root.Content
 	pageName, label := PageName(), LinkLabel()
 	link, err := content.AddLinkToPage(pageName, label)
 
 	assert.NoError(t, err)
+	assert.NotEmpty(t, link.LinksFrom)
+	assert.NotEmpty(t, link.LinksTo)
 	assert.NotEmpty(t, content.PageLinks)
 	assert.Equal(t, label, link.Label)
 	assert.False(t, link.IsEmbed)
@@ -86,6 +124,17 @@ func TestBlockContent_AddEmbeddedLinkToResource(t *testing.T) {
 	assert.NotEmpty(t, content.ResourceLinks)
 	assert.Equal(t, resource, link.LinksTo)
 	assert.True(t, link.IsEmbed)
+}
+
+func TestBlockContent_FindLinkToAsset(t *testing.T) {
+	content := logseq.NewEmptyBlockContent()
+	assetPath := "assets/test.jpg"
+	label := LinkLabel()
+	content.AddLinkToAsset(assetPath, label)
+	link := content.FindLinkToAsset(assetPath)
+
+	assert.NotNil(t, link)
+	assert.Equal(t, assetPath, link.LinksTo.(*logseq.Asset).PathInGraph)
 }
 
 func TestBlockContent_FindLinkToPage(t *testing.T) {

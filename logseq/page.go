@@ -160,6 +160,10 @@ func (p *Page) ResourceLinks() []*Link {
 	return links
 }
 
+func (p *Page) String() string {
+	return fmt.Sprintf("<Page: %s>", p.Name)
+}
+
 // SetRoot assign's page root block and sets AllBlocks to root's branches
 func (p *Page) SetRoot(root *Block) {
 	p.Root = root

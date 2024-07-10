@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"export-logseq/logseq"
 )
@@ -92,6 +93,23 @@ func TestGraph_FindAsset_NotFound(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, logseq.AssetNotFoundError{AssetPath: "assets/test.jpg"})
+}
+
+func TestGraph_FindLinksToPage(t *testing.T) {
+	graph := logseq.NewGraph()
+	fromPage, toPage := Page(), Page()
+	err := graph.AddPage(&fromPage)
+	require.NoError(t, err)
+
+	err = graph.AddPage(&toPage)
+	require.NoError(t, err)
+
+	link, err := fromPage.Root.Content.AddLinkToPage(toPage.Name, toPage.Name)
+	require.NoError(t, err)
+
+	links := graph.FindLinksToPage(&toPage)
+	assert.NotEmpty(t, links)
+	assert.Contains(t, links, link)
 }
 
 func TestGraph_FindPage(t *testing.T) {

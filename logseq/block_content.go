@@ -33,6 +33,50 @@ func NewBlockContent(block *Block, rawSource string) *BlockContent {
 	return content
 }
 
+// AddLinkToAsset adds a link to an asset from the block content.
+func (bc *BlockContent) AddLinkToAsset(path string, label string) (*Link, error) {
+	asset := NewAsset(path)
+	foundLink := bc.FindLinkToAsset(path)
+	if foundLink != nil {
+		return nil, ErrorDuplicateAssetLink{AssetPath: path}
+	}
+
+	link := Link{
+		LinksFrom: bc.Block,
+		LinksTo:   &asset,
+		Label:     label,
+		IsEmbed:   false,
+	}
+
+	bc.AssetLinks = append(bc.AssetLinks, &link)
+
+	return &link, nil
+}
+
+// AddEmbeddedLinkToAsset adds an embedded link to an asset from the block content.
+func (bc *BlockContent) AddEmbeddedLinkToAsset(path string, label string) (*Link, error) {
+	link, err := bc.AddLinkToAsset(path, label)
+	if err != nil {
+		return nil, errors.Wrap(err, "adding link to asset")
+	}
+
+	link.IsEmbed = true
+
+	return link, nil
+}
+
+func (bc *BlockContent) FindLinkToAsset(assetPath string) *Link {
+	for _, link := range bc.AssetLinks {
+		target := link.LinksTo.(*Asset)
+		if target.PathInGraph == assetPath {
+			return link
+		}
+	}
+
+	return nil
+
+}
+
 // FindLinkToPage checks if the block content already links to the page.
 func (bc *BlockContent) FindLinkToPage(pageName string) *Link {
 	for _, link := range bc.PageLinks {
@@ -79,6 +123,7 @@ func (bc *BlockContent) AddLinkToPage(pageName string, label string) (*Link, err
 		Label:     label,
 		IsEmbed:   false,
 	}
+	log.Info("Adding link: ", link)
 
 	bc.PageLinks = append(bc.PageLinks, &link)
 
@@ -166,30 +211,40 @@ func (bc *BlockContent) findPageLinks() {
 }
 
 func (bc *BlockContent) findResourceLinks() error {
-	resourceLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\((.*?)\)`)
-	resourceLinks := []*Link{}
+	resourceLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\(((../assets/)?.*?)\)`)
 
 	for _, match := range resourceLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
-		isEmbed, label, resourceUrl := match[1], match[2], match[3]
-		log.Debug("Found resource link: ", match[0], isEmbed, label, resourceUrl)
-		resource := ExternalResource{Uri: resourceUrl}
+		isEmbed, label, resourceUrl, isAsset := match[1], match[2], match[3], match[4]
+		log.Debugf("Found resource link: ->%s<- label=%s uri=%s", match[0], label, resourceUrl)
 
-		if isEmbed == "!" {
-			_, err := bc.AddEmbeddedLinkToResource(resource, label)
-			if err != nil {
-				return errors.Wrap(err, "adding embedded link to resource")
+		if isAsset != "" {
+			if isEmbed == "!" {
+				_, err := bc.AddEmbeddedLinkToAsset(resourceUrl, label)
+				if err != nil {
+					return errors.Wrap(err, "adding embedded link to asset")
+				}
+			} else {
+				_, err := bc.AddLinkToAsset(resourceUrl, label)
+				if err != nil {
+					return errors.Wrap(err, "adding link to asset")
+				}
 			}
+		} else {
+			resource := ExternalResource{Uri: resourceUrl}
 
-			continue
-		}
-
-		_, err := bc.AddLinkToResource(resource, label)
-		if err != nil {
-			return errors.Wrap(err, "adding link to resource")
+			if isEmbed == "!" {
+				_, err := bc.AddEmbeddedLinkToResource(resource, label)
+				if err != nil {
+					return errors.Wrap(err, "adding embedded link to resource")
+				}
+			} else {
+				_, err := bc.AddLinkToResource(resource, label)
+				if err != nil {
+					return errors.Wrap(err, "adding link to resource")
+				}
+			}
 		}
 	}
-
-	bc.ResourceLinks = resourceLinks
 
 	return nil
 }

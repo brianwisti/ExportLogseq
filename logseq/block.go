@@ -1,6 +1,7 @@
 package logseq
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -18,11 +19,15 @@ type Block struct {
 }
 
 func NewEmptyBlock() *Block {
-	return &Block{
+	content := NewEmptyBlockContent()
+	block := Block{
 		ID:         uuid.New().String(),
-		Content:    NewEmptyBlockContent(),
+		Content:    content,
 		Properties: NewPropertyMap(),
 	}
+	content.Block = &block
+
+	return &block
 }
 
 func NewBlock(page *Page, sourceLines []string, depth int) *Block {
@@ -97,6 +102,16 @@ func (b *Block) PageLinks() []*Link {
 // ResourceLinks returns all resource links found in the block
 func (b *Block) ResourceLinks() []*Link {
 	return b.Content.ResourceLinks
+}
+
+func (b *Block) String() string {
+	pageName := "NO PAGE"
+
+	if b.Page != nil {
+		pageName = b.Page.Name
+	}
+
+	return fmt.Sprintf("<Block: %s#%s>", pageName, b.ID)
 }
 
 type BlockStack struct {
