@@ -1,26 +1,42 @@
 package logseq
 
-// Linkable is an interface for types that can be linked to in a Logseq graph.
-type Linkable interface {
-	// PathInContext returns the path to the linkable in the context of the given graph.
-	InContext(Graph) (string, error)
-}
+type LinkType string
 
-// ExternalResource represents a resource that is external to the Logseq graph.
-type ExternalResource struct {
-	Uri string `json:"uri"`
-}
-
-// InContext returns the URI of the external resource.
-func (r ExternalResource) InContext(g Graph) (string, error) {
-	return r.Uri, nil
-}
+const (
+	LinkTypeAsset    LinkType = "asset"
+	LinkTypePage     LinkType = "page"
+	LinkTypeResource LinkType = "resource"
+	LinkTypeBlock    LinkType = "block"
+)
 
 // A Link connects two Linkable objects.
 type Link struct {
-	Raw       string   `json:"-"`
-	LinksFrom Linkable `json:"from"`
-	LinksTo   Linkable `json:"to"`
+	Raw       string   `json:"raw"`
+	LinksFrom *Block   `json:"from"`
+	LinkPath  string   `json:"link_path"`
+	LinkType  LinkType `json:"link_type"`
 	IsEmbed   bool     `json:"is_embed"`
 	Label     string   `json:"label"`
+}
+
+// Convenience methods in case I change the implementation details.
+
+// IsAsset returns true if the link is an asset link.
+func (l *Link) IsAsset() bool {
+	return l.LinkType == LinkTypeAsset
+}
+
+// IsBlock returns true if the link is a block link.
+func (l *Link) IsBlock() bool {
+	return l.LinkType == LinkTypeBlock
+}
+
+// IsPage returns true if the link is a page link.
+func (l *Link) IsPage() bool {
+	return l.LinkType == LinkTypePage
+}
+
+// IsResource returns true if the link is a resource link.
+func (l *Link) IsResource() bool {
+	return l.LinkType == LinkTypeResource
 }

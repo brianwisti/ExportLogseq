@@ -3,6 +3,7 @@ package logseq_test
 import (
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/assert"
 
 	"export-logseq/logseq"
@@ -85,37 +86,24 @@ func TestBlock_IsPublic_OverridesParent(t *testing.T) {
 	assert.True(t, child.IsPublic())
 }
 
-func TestBlock_PageLinks_Empty(t *testing.T) {
+func TestBlock_Links(t *testing.T) {
 	block := logseq.NewEmptyBlock()
-	links := block.PageLinks()
+	link := logseq.Link{
+		LinkPath: gofakeit.URL(),
+		Label:    gofakeit.Phrase(),
+		LinkType: logseq.LinkTypeResource,
+		IsEmbed:  false,
+	}
+	link, _ = block.Content.AddLink(link)
+	links := block.Links()
+
+	assert.Contains(t, links, &link)
+}
+
+func TestBlock_Links_Empty(t *testing.T) {
+	block := logseq.NewEmptyBlock()
+	links := block.Links()
 
 	assert.NotNil(t, links)
 	assert.Empty(t, links)
-}
-
-func TestBlock_PageLinks(t *testing.T) {
-	block := logseq.NewEmptyBlock()
-	pageName, label := PageName(), LinkLabel()
-	link, _ := block.Content.AddLinkToPage(pageName, label)
-	links := block.PageLinks()
-
-	assert.Contains(t, links, link)
-}
-
-func TestBlock_ResourceLinks_Empty(t *testing.T) {
-	block := logseq.NewEmptyBlock()
-	links := block.ResourceLinks()
-
-	assert.NotNil(t, links)
-	assert.Empty(t, links)
-}
-
-func TestBlock_ResourceLinks(t *testing.T) {
-	block := logseq.NewEmptyBlock()
-	resource := logseq.ExternalResource{Uri: "https://example.com"}
-	label := "Example"
-	link, _ := block.Content.AddLinkToResource(resource, label)
-	links := block.ResourceLinks()
-
-	assert.Contains(t, links, link)
 }

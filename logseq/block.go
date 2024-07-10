@@ -94,14 +94,15 @@ func (b *Block) IsPublic() bool {
 	return false
 }
 
-// PageLinks returns all page links found in the block
-func (b *Block) PageLinks() []*Link {
-	return b.Content.PageLinks
-}
+// Links returns all links found in the block
+func (b *Block) Links() []*Link {
+	links := []*Link{}
 
-// ResourceLinks returns all resource links found in the block
-func (b *Block) ResourceLinks() []*Link {
-	return b.Content.ResourceLinks
+	for _, link := range b.Content.Links {
+		links = append(links, link)
+	}
+
+	return links
 }
 
 func (b *Block) String() string {

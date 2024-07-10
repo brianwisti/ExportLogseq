@@ -3,6 +3,7 @@ package logseq_test
 import (
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/assert"
 
 	"export-logseq/logseq"
@@ -13,7 +14,7 @@ func TestNewEmptyBlockContent(t *testing.T) {
 
 	assert.NotNil(t, content)
 	assert.Empty(t, content.Block)
-	assert.Empty(t, content.ResourceLinks)
+	assert.Empty(t, content.Links)
 }
 
 func TestNewBlockContent(t *testing.T) {
@@ -25,142 +26,81 @@ func TestNewBlockContent(t *testing.T) {
 	assert.Equal(t, block, content.Block)
 }
 
-func TestBlockContent_AddLinkToAsset(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
-	assetPath := "assets/test.jpg"
-	label := LinkLabel()
-	link, err := content.AddLinkToAsset(assetPath, label)
+func TestBlockContent_AddLink(t *testing.T) {
+	addLinkTests := []struct {
+		LinkType logseq.LinkType
+		linkPath string
+		Label    string
+		IsEmbed  bool
+	}{
+		{logseq.LinkTypeResource, gofakeit.URL(), gofakeit.Phrase(), false},
+	}
 
-	assert.NoError(t, err)
-	assert.NotNil(t, link)
+	for _, tt := range addLinkTests {
+		content := logseq.NewEmptyBlockContent()
+		link := logseq.Link{
+			LinkPath: tt.linkPath,
+			Label:    tt.Label,
+			LinkType: tt.LinkType,
+			IsEmbed:  tt.IsEmbed,
+		}
+
+		addedLink, err := content.AddLink(link)
+
+		assert.NoError(t, err)
+		assert.NotEmpty(t, content.Links)
+
+		assert.Equal(t, content.Block, addedLink.LinksFrom)
+		assert.Equal(t, link.LinkPath, addedLink.LinkPath)
+		assert.Equal(t, link.Label, addedLink.Label)
+		assert.Equal(t, link.LinkType, addedLink.LinkType)
+		assert.Equal(t, link.IsEmbed, addedLink.IsEmbed)
+	}
 }
 
-func TestBlockContent_AddLinkToAsset_Duplicate(t *testing.T) {
+func TestBlockContent_AddLink_Duplicate(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	assetPath := "assets/test.jpg"
-	label := LinkLabel()
-	content.AddLinkToAsset(assetPath, label)
-	assetCount := len(content.ResourceLinks)
-	link, err := content.AddLinkToAsset(assetPath, label)
+	link := logseq.Link{
+		LinkPath: gofakeit.URL(),
+		Label:    gofakeit.Phrase(),
+		LinkType: logseq.LinkTypeResource,
+		IsEmbed:  false,
+	}
+	content.AddLink(link)
+	linkCount := len(content.Links)
+	addedLink, err := content.AddLink(link)
 
-	assert.Nil(t, link)
+	assert.Empty(t, addedLink)
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, logseq.ErrorDuplicateAssetLink{AssetPath: assetPath})
-	assert.Equal(t, assetCount, len(content.ResourceLinks))
+	assert.ErrorIs(t, err, logseq.ErrorDuplicateLink{LinkPath: link.LinkPath})
+	assert.Equal(t, linkCount, len(content.Links))
 }
 
-func TestBlockContent_AddEmbeddedLinkToAsset(t *testing.T) {
+func TestBlockContent_FindLink(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	assetPath := "assets/test.jpg"
-	label := LinkLabel()
-	link, err := content.AddEmbeddedLinkToAsset(assetPath, label)
+	linkPath := gofakeit.URL()
+	link := logseq.Link{
+		LinksFrom: content.Block,
+		LinkPath:  linkPath,
+		Label:     gofakeit.Phrase(),
+		LinkType:  logseq.LinkTypeResource,
+		IsEmbed:   false,
+	}
+	content.Links[linkPath] = &link
+	foundLink, ok := content.FindLink(linkPath)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, link)
-	assert.True(t, link.IsEmbed)
+	assert.True(t, ok)
+	assert.NotNil(t, foundLink)
+	assert.Equal(t, linkPath, foundLink.LinkPath)
 }
 
-func TestBlockContent_AddLinkToPage(t *testing.T) {
-	fromPage := Page()
-	content := fromPage.Root.Content
-	pageName, label := PageName(), LinkLabel()
-	link, err := content.AddLinkToPage(pageName, label)
-
-	assert.NoError(t, err)
-	assert.NotEmpty(t, link.LinksFrom)
-	assert.NotEmpty(t, link.LinksTo)
-	assert.NotEmpty(t, content.PageLinks)
-	assert.Equal(t, label, link.Label)
-	assert.False(t, link.IsEmbed)
-
-	linkedPage := link.LinksTo.(*logseq.Page)
-	assert.Equal(t, pageName, linkedPage.Name)
-}
-
-func TestBlockContent_AddLinkToPage_Duplicate(t *testing.T) {
+func TestBlockContent_FindLink_NotFound(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	pageName, label := PageName(), LinkLabel()
-	content.AddLinkToPage(pageName, label)
-	pageCount := len(content.PageLinks)
-	link, err := content.AddLinkToPage(pageName, label)
+	linkPath := gofakeit.URL()
+	foundLink, ok := content.FindLink(linkPath)
 
-	assert.Nil(t, link)
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, logseq.ErrorDuplicatePageLink{PageName: pageName})
-	assert.Equal(t, pageCount, len(content.PageLinks))
-}
-
-func TestBlockContent_AddLinkToResource(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
-	resource, label := ExternalResource(), LinkLabel()
-	link, err := content.AddLinkToResource(resource, label)
-
-	assert.NoError(t, err)
-	assert.NotEmpty(t, content.ResourceLinks)
-	assert.Equal(t, resource, link.LinksTo)
-	assert.Equal(t, label, link.Label)
-	assert.False(t, link.IsEmbed)
-}
-
-func TestBlockContent_AddLinkToResource_Duplicate(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
-	resource, label := ExternalResource(), LinkLabel()
-	content.AddLinkToResource(resource, label)
-	resourceCount := len(content.ResourceLinks)
-	link, err := content.AddLinkToResource(resource, label)
-
-	assert.Nil(t, link)
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, logseq.ErrorDuplicateResourceLink{Resource: resource})
-	assert.Equal(t, resourceCount, len(content.ResourceLinks))
-}
-
-func TestBlockContent_AddEmbeddedLinkToResource(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
-	resource, label := ExternalResource(), LinkLabel()
-	link, err := content.AddEmbeddedLinkToResource(resource, label)
-
-	assert.NoError(t, err)
-	assert.NotEmpty(t, content.ResourceLinks)
-	assert.Equal(t, resource, link.LinksTo)
-	assert.True(t, link.IsEmbed)
-}
-
-func TestBlockContent_FindLinkToAsset(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
-	assetPath := "assets/test.jpg"
-	label := LinkLabel()
-	content.AddLinkToAsset(assetPath, label)
-	link := content.FindLinkToAsset(assetPath)
-
-	assert.NotNil(t, link)
-	assert.Equal(t, assetPath, link.LinksTo.(*logseq.Asset).PathInGraph)
-}
-
-func TestBlockContent_FindLinkToPage(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
-	pageName, label := PageName(), LinkLabel()
-	content.AddLinkToPage(pageName, label)
-	link := content.FindLinkToPage(pageName)
-
-	assert.NotNil(t, link)
-	assert.Equal(t, pageName, link.LinksTo.(*logseq.Page).Name)
-}
-
-func TestBlockContent_FindLinkToResource(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
-	resource, label := ExternalResource(), LinkLabel()
-	content.AddLinkToResource(resource, label)
-	link := content.FindLinkToResource(resource)
-
-	assert.Equal(t, resource, link.LinksTo)
-}
-
-func TestBlockContent_FindLinkToResource_NotFound(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
-	resource := ExternalResource()
-
-	assert.Nil(t, content.FindLinkToResource(resource))
+	assert.False(t, ok)
+	assert.Nil(t, foundLink)
 }
 
 func TestBlockContent_IsCodeBlock(t *testing.T) {

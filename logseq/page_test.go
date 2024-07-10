@@ -3,6 +3,7 @@ package logseq_test
 import (
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/assert"
 
 	"export-logseq/logseq"
@@ -113,23 +114,24 @@ func TestPage_IsPublic_FromRoot(t *testing.T) {
 	assert.False(t, page.IsPublic())
 }
 
-func TestPage_PageLinks_Empty(t *testing.T) {
+func TestPage_Links_Empty(t *testing.T) {
 	page := logseq.NewEmptyPage()
-	pageLinks := page.PageLinks()
 
-	assert.NotNil(t, pageLinks)
-	assert.Empty(t, pageLinks)
+	assert.Empty(t, page.Links())
 }
 
-func TestPage_PageLinks_FromRoot(t *testing.T) {
+func TestPage_Links_FromRoot(t *testing.T) {
 	page := logseq.NewEmptyPage()
-	block := logseq.NewEmptyBlock()
-	pageName, label := PageName(), LinkLabel()
-	link, _ := block.Content.AddLinkToPage(pageName, label)
-	page.SetRoot(block)
-	links := page.PageLinks()
+	link := logseq.Link{
+		LinkPath: gofakeit.URL(),
+		Label:    gofakeit.Phrase(),
+		LinkType: logseq.LinkTypeResource,
+		IsEmbed:  false,
+	}
+	link, _ = page.Root.Content.AddLink(link)
+	links := page.Links()
 
-	assert.Contains(t, links, link)
+	assert.Contains(t, links, &link)
 }
 
 func TestPage_Properties_Empty(t *testing.T) {
@@ -150,17 +152,6 @@ func TestPage_Properties_FromRoot(t *testing.T) {
 
 	assert.True(t, ok)
 	assert.Equal(t, "123", got.Value)
-}
-
-func TestPage_ResourceLinks(t *testing.T) {
-	page := logseq.NewEmptyPage()
-	block := logseq.NewEmptyBlock()
-	resource, label := ExternalResource(), LinkLabel()
-	link, _ := block.Content.AddLinkToResource(resource, label)
-	page.SetRoot(block)
-	links := page.ResourceLinks()
-
-	assert.Contains(t, links, link)
 }
 
 func TestPage_SetRoot(t *testing.T) {

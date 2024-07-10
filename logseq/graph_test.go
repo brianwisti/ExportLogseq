@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -104,12 +105,19 @@ func TestGraph_FindLinksToPage(t *testing.T) {
 	err = graph.AddPage(&toPage)
 	require.NoError(t, err)
 
-	link, err := fromPage.Root.Content.AddLinkToPage(toPage.Name, toPage.Name)
+	link := logseq.Link{
+		LinkPath: toPage.Name,
+		Label:    toPage.Name,
+		LinkType: logseq.LinkTypePage,
+		IsEmbed:  false,
+	}
+
+	link, err = fromPage.Root.Content.AddLink(link)
 	require.NoError(t, err)
 
 	links := graph.FindLinksToPage(&toPage)
 	assert.NotEmpty(t, links)
-	assert.Contains(t, links, link)
+	assert.Contains(t, links, &link)
 }
 
 func TestGraph_FindPage(t *testing.T) {
@@ -157,6 +165,32 @@ func TestGraph_FindPage_WithAlias(t *testing.T) {
 	assert.Equal(t, &page, foundPage)
 }
 
+func TestGraph_Links(t *testing.T) {
+	graph := logseq.NewGraph()
+	page := logseq.NewEmptyPage()
+	page.Name = "Test Page"
+	page.PathInSite = "test-page"
+	link := logseq.Link{
+		LinkPath: gofakeit.URL(),
+		Label:    gofakeit.Phrase(),
+		LinkType: logseq.LinkTypeResource,
+		IsEmbed:  false,
+	}
+	link, _ = page.Root.Content.AddLink(link)
+	graph.AddPage(&page)
+	links := graph.Links()
+
+	assert.NotEmpty(t, links)
+	assert.Contains(t, links, &link)
+}
+
+func TestGraph_Links_Empty(t *testing.T) {
+	graph := logseq.NewGraph()
+	links := graph.Links()
+
+	assert.Empty(t, links)
+}
+
 func TestGraph_PageLinks_Empty(t *testing.T) {
 	graph := logseq.NewGraph()
 	links := graph.PageLinks()
@@ -169,11 +203,18 @@ func TestGraph_PageLinks(t *testing.T) {
 	page := logseq.NewEmptyPage()
 	graph.AddPage(&page)
 	pageName, label := PageName(), LinkLabel()
-	link, _ := page.Root.Content.AddLinkToPage(pageName, label)
+	link := logseq.Link{
+		LinkPath: pageName,
+		Label:    label,
+		LinkType: logseq.LinkTypePage,
+		IsEmbed:  false,
+	}
+
+	link, _ = page.Root.Content.AddLink(link)
 
 	links := graph.PageLinks()
 	assert.NotEmpty(t, links)
-	assert.Contains(t, links, link)
+	assert.Contains(t, links, &link)
 }
 
 func TestGraph_PublicGraph(t *testing.T) {
@@ -206,11 +247,16 @@ func TestGraph_ResourceLinks(t *testing.T) {
 	page := logseq.NewEmptyPage()
 	page.Name = "Test Page"
 	page.PathInSite = "test-page"
-	resource, label := ExternalResource(), LinkLabel()
-	link, _ := page.Root.Content.AddLinkToResource(resource, label)
+	url, label := gofakeit.URL(), gofakeit.Phrase()
+	link := logseq.Link{
+		LinkPath: url,
+		Label:    label,
+		LinkType: logseq.LinkTypeResource,
+	}
+	link, _ = page.Root.Content.AddLink(link)
 	graph.AddPage(&page)
 	links := graph.ResourceLinks()
 
 	assert.NotEmpty(t, links)
-	assert.Contains(t, links, link)
+	assert.Contains(t, links, &link)
 }
