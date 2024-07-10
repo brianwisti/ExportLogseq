@@ -284,19 +284,18 @@ func (g *Graph) prepBlockForSite(block *Block) {
 		}
 
 		linkString := "*" + link.Label + "*"
-		permalink := "/" + link.LinkPath
 
 		targetPage, err := g.FindPage(link.LinkPath)
 		if err != nil {
 			if _, ok := err.(DisconnectedPageError); ok {
-				log.Warnf("Block %v placeholder link: >%v<", block.ID, link.Label)
-			} else {
 				log.Fatalf("Linking page: %v", err)
+			} else {
+				log.Warnf("Block %v placeholder link: >%v<", block.ID, link.Label)
 			}
 		}
 
 		if targetPage != nil {
-			permalink = "/" + targetPage.PathInSite
+			permalink := "/" + targetPage.PathInSite
 			log.Debug("Linking ", block.ID, " to ", permalink)
 			linkString = "[" + link.Label + "](" + permalink + ")"
 		}

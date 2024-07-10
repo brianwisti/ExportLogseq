@@ -12,7 +12,7 @@ const (
 // A Link connects two Linkable objects.
 type Link struct {
 	Raw       string   `json:"raw"`
-	LinksFrom *Block   `json:"from"`
+	LinksFrom *Block   `json:"-"`
 	LinkPath  string   `json:"link_path"`
 	LinkType  LinkType `json:"link_type"`
 	IsEmbed   bool     `json:"is_embed"`

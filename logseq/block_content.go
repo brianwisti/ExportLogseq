@@ -9,7 +9,7 @@ import (
 
 // BlockContent represents the content of a block in a Logseq graph.
 type BlockContent struct {
-	Block    *Block           `json:"block"` // Block that contains this content
+	Block    *Block           `json:"-"` // Block that contains this content
 	Markdown string           `json:"markdown"`
 	HTML     string           `json:"html"`
 	Links    map[string]*Link `json:"links"`
@@ -87,9 +87,10 @@ func (bc *BlockContent) findPageLinks() {
 	}
 
 	for _, match := range pageLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
-		pageName := match[1]
-		log.Debugf("Found page link: [%s] -> %s", match[0], pageName)
+		raw, pageName := match[0], match[1]
+		log.Debugf("Found page link: [%s] -> %s", raw, pageName)
 		link := Link{
+			Raw:      raw,
 			LinkPath: pageName,
 			Label:    pageName,
 			LinkType: LinkTypePage,
@@ -106,8 +107,8 @@ func (bc *BlockContent) findResourceLinks() error {
 	resourceLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\(((../assets/)?.*?)\)`)
 
 	for _, match := range resourceLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
-		isEmbed, label, resourceUrl, isAsset := match[1], match[2], match[3], match[4]
-		log.Debugf("Found resource link: ->%s<- label=%s uri=%s", match[0], label, resourceUrl)
+		raw, isEmbed, label, resourceUrl, isAsset := match[0], match[1], match[2], match[3], match[4]
+		log.Debugf("Found resource link: ->%s<- label=%s uri=%s", raw, label, resourceUrl)
 
 		linkType := LinkTypeResource
 
@@ -116,6 +117,7 @@ func (bc *BlockContent) findResourceLinks() error {
 		}
 
 		link := Link{
+			Raw:      raw,
 			LinkPath: resourceUrl,
 			Label:    label,
 			LinkType: linkType,
