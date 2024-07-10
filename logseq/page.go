@@ -133,12 +133,12 @@ func (p *Page) IsPublic() bool {
 	return p.Root.IsPublic()
 }
 
-// PageLinks returns all page links found in the page.
-func (p *Page) PageLinks() []*Link {
+// Links returns links collected from all blocks in the page.
+func (p *Page) Links() []*Link {
 	links := []*Link{}
 
 	for _, block := range p.AllBlocks {
-		links = append(links, block.PageLinks()...)
+		links = append(links, block.Links()...)
 	}
 
 	return links
@@ -147,17 +147,6 @@ func (p *Page) PageLinks() []*Link {
 // Properties returns the root block's properties.
 func (p *Page) Properties() *PropertyMap {
 	return p.Root.Properties
-}
-
-// ResourceLinks returns all resource links found in the page.
-func (p *Page) ResourceLinks() []*Link {
-	links := []*Link{}
-
-	for _, block := range p.AllBlocks {
-		links = append(links, block.ResourceLinks()...)
-	}
-
-	return links
 }
 
 func (p *Page) String() string {

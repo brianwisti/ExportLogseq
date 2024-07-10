@@ -45,10 +45,14 @@ func main() {
 
 	enc := json.NewEncoder(exportFile)
 	enc.SetIndent("", "  ")
-	enc.Encode(graph)
+	err = enc.Encode(graph)
+	if err != nil {
+		log.Fatal("encoding graph:", err)
+	}
+
 	log.Info("All done!")
 	elapsed := time.Since(start)
 	pageCount := len(graph.Pages)
-	log.Infof("Exported %d pages", pageCount)
+	log.Infof("Exported %d pages to: %s", pageCount, exportPath)
 	log.Infof("Elapsed time: %s", elapsed)
 }

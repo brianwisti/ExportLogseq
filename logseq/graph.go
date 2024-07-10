@@ -149,9 +149,9 @@ func (g *Graph) FindLinksToPage(page *Page) []*Link {
 	links := []*Link{}
 
 	for _, link := range g.PageLinks() {
-		linkTarget := link.LinksTo.(*Page)
+		linkTarget := link.LinkPath
 		log.Debug("Checking link from ", link.LinksFrom, " to ", linkTarget)
-		if linkTarget.Name == page.Name {
+		if page.Name == linkTarget {
 			log.Debug("Found link to ", page.Name, " in ", link.LinksFrom)
 			links = append(links, link)
 		}
@@ -179,12 +179,25 @@ func (g *Graph) FindPage(name string) (*Page, error) {
 	return nil, PageNotFoundError{name}
 }
 
+// Links returns all links found in the graph.
+func (g *Graph) Links() []*Link {
+	links := []*Link{}
+
+	for _, page := range g.Pages {
+		links = append(links, page.Links()...)
+	}
+
+	return links
+}
+
 // PageLinks returns all page links found in the graph.
 func (g *Graph) PageLinks() []*Link {
 	links := []*Link{}
 
-	for _, page := range g.Pages {
-		links = append(links, page.PageLinks()...)
+	for _, link := range g.Links() {
+		if link.LinkType == LinkTypePage {
+			links = append(links, link)
+		}
 	}
 
 	return links
@@ -228,10 +241,12 @@ func (g *Graph) PutPagesInContext() {
 func (g *Graph) ResourceLinks() []*Link {
 	links := []*Link{}
 
-	for _, page := range g.Pages {
-		log.Debug("Checking resource links in ", page.Name)
-		links = append(links, page.ResourceLinks()...)
+	for _, link := range g.Links() {
+		if link.LinkType == LinkTypeResource {
+			links = append(links, link)
+		}
 	}
+
 	log.Debug("Resource links found: ", len(links))
 
 	return links
@@ -248,29 +263,39 @@ func (g *Graph) prepPageForSite(page *Page) {
 
 func (g *Graph) prepBlockForSite(block *Block) {
 	blockMarkdown := block.Content.Markdown
-	log.Debug("Prepping block ", block.ID, " with ", len(block.Content.PageLinks), " page links")
+	pageLinksFromBlock := []*Link{}
+
+	for _, link := range block.Content.Links {
+		if link.LinkType == LinkTypePage {
+			pageLinksFromBlock = append(pageLinksFromBlock, link)
+		}
+	}
+
+	log.Debug("Prepping block ", block.ID, " with ", len(pageLinksFromBlock), " page links")
 	log.Debug("Initial block Markdown: ", blockMarkdown)
 
-	for i := 0; i < len(block.Content.PageLinks); i++ {
-		link := block.Content.PageLinks[i]
+	for i := 0; i < len(pageLinksFromBlock); i++ {
+		link := pageLinksFromBlock[i]
 		log.Debug("Raw link: ", link.Raw)
+		if link.LinkPath == "" {
+			// Probably a bug in link-finding logic, so log the block content.
+			log.Warning("Empty link in block content: ", block.Content.Markdown)
+			continue
+		}
+
 		linkString := "*" + link.Label + "*"
-		linkTarget := link.LinksTo.(*Page)
-		permalink, err := linkTarget.InContext(*g)
+
+		targetPage, err := g.FindPage(link.LinkPath)
 		if err != nil {
 			if _, ok := err.(DisconnectedPageError); ok {
-				log.Warnf("Block %v placeholder link: >%v<", block.ID, link.Label)
-
-				if linkTarget.Name == "" {
-					// Probably a bug in link-finding logic, so log the block content.
-					log.Info("Block content: ", block.Content.Markdown)
-				}
-			} else {
 				log.Fatalf("Linking page: %v", err)
+			} else {
+				log.Warnf("Block %v placeholder link: >%v<", block.ID, link.Label)
 			}
 		}
 
-		if permalink != "" {
+		if targetPage != nil {
+			permalink := "/" + targetPage.PathInSite
 			log.Debug("Linking ", block.ID, " to ", permalink)
 			linkString = "[" + link.Label + "](" + permalink + ")"
 		}
