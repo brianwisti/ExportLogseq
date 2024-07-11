@@ -21,5 +21,9 @@
         "titleBar.inactiveBackground": "#b880a499",
         "titleBar.inactiveForeground": "#15202b99"
     },
-    "peacock.color": "#b880a4"
+    "peacock.color": "#b880a4",
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": [
+        "--fast"
+    ],
 }

@@ -70,7 +70,7 @@ func (bc *BlockContent) SetMarkdown(markdown string) error {
 			log.Fatalf("(%s) callout mismatch: %s != %s", bc.BlockID, opener, closer)
 		}
 		bc.Callout = strings.ToLower(opener)
-		log.Infof("(%s) found callout: %s", bc.BlockID, bc.Callout)
+		log.Debugf("(%s) found callout: %s", bc.BlockID, bc.Callout)
 		markdown = calloutRe.ReplaceAllString(markdown, body)
 		log.Debug("New Markdown: ", markdown)
 	}
@@ -131,6 +131,7 @@ func (bc *BlockContent) findResourceLinks() error {
 
 		if isAsset != "" {
 			linkType = LinkTypeAsset
+			resourceUrl = strings.TrimPrefix(resourceUrl, "..")
 		}
 
 		link := Link{

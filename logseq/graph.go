@@ -13,7 +13,7 @@ import (
 type Graph struct {
 	GraphDir string
 	Pages    map[string]*Page  `json:"pages"`
-	Assets   map[string]*Asset `json:"-"`
+	Assets   map[string]*Asset `json:"assets"`
 }
 
 func NewGraph() *Graph {
@@ -55,7 +55,8 @@ func LoadGraph(graphDir string) *Graph {
 			log.Fatal("calculating relative path for asset:", err)
 		}
 
-		asset := NewAsset(relPath)
+		asset := NewAsset("/assets/" + relPath)
+		asset.PathInSite = "/img/" + relPath
 		err = graph.AddAsset(&asset)
 		if err != nil {
 			log.Fatalf("adding asset %s: %v", assetFile, err)
@@ -109,11 +110,12 @@ func LoadGraph(graphDir string) *Graph {
 
 // AddAsset adds an asset to the graph.
 func (g *Graph) AddAsset(asset *Asset) error {
-	assetKey := strings.ToLower(asset.PathInGraph)
+	assetKey := asset.PathInGraph
 	_, assetExists := g.Assets[assetKey]
 	if assetExists {
 		return AssetExistsError{asset.PathInGraph}
 	}
+	log.Debugf("Adding asset: %s", asset.PathInGraph)
 
 	g.Assets[assetKey] = asset
 
@@ -134,14 +136,9 @@ func (g *Graph) AddPage(page *Page) error {
 }
 
 // FindAsset returns an asset by path.
-func (g *Graph) FindAsset(path string) (*Asset, error) {
-	assetKey := strings.ToLower(path)
-	asset, ok := g.Assets[assetKey]
-	if ok {
-		return asset, nil
-	}
-
-	return nil, AssetNotFoundError{path}
+func (g *Graph) FindAsset(path string) (*Asset, bool) {
+	asset, ok := g.Assets[path]
+	return asset, ok
 }
 
 // FindLinksToPage returns all links to a Page.
@@ -208,11 +205,29 @@ func (g *Graph) PageLinks() []Link {
 func (g *Graph) PublicGraph() *Graph {
 	publicGraph := NewGraph()
 	publicGraph.GraphDir = g.GraphDir
-	publicGraph.Assets = g.Assets
 
 	for _, page := range g.Pages {
 		if page.IsPublic() {
 			publicGraph.AddPage(page)
+		}
+	}
+
+	// Add assets that are linked from public pages.
+	for _, link := range publicGraph.Links() {
+		if link.LinkType == LinkTypeAsset {
+			log.Debugf("Checking asset %s", link.LinkPath)
+			asset, ok := g.FindAsset(link.LinkPath)
+			if !ok {
+				log.Fatalf("Asset not in original graph: [%s]", link.LinkPath)
+			}
+
+			_, ok = publicGraph.FindAsset(link.LinkPath)
+			if !ok {
+				err := publicGraph.AddAsset(asset)
+				if err != nil {
+					log.Fatalf("adding asset %s to public graph: %v", link.LinkPath, err)
+				}
+			}
 		}
 	}
 
@@ -265,10 +280,13 @@ func (g *Graph) prepPageForSite(page *Page) {
 func (g *Graph) prepBlockForSite(block *Block) {
 	blockMarkdown := block.Content.Markdown
 	pageLinksFromBlock := []Link{}
+	assetLinksFromBlock := []Link{}
 
 	for _, link := range block.Content.Links {
 		if link.LinkType == LinkTypePage {
 			pageLinksFromBlock = append(pageLinksFromBlock, link)
+		} else if link.LinkType == LinkTypeAsset {
+			assetLinksFromBlock = append(assetLinksFromBlock, link)
 		}
 	}
 
@@ -301,6 +319,26 @@ func (g *Graph) prepBlockForSite(block *Block) {
 			linkString = "[" + link.Label + "](" + permalink + ")"
 		}
 
+		blockMarkdown = strings.Replace(blockMarkdown, link.Raw, linkString, 1)
+	}
+
+	for i := 0; i < len(assetLinksFromBlock); i++ {
+		link := assetLinksFromBlock[i]
+		log.Debug("Raw asset link: ", link.Raw)
+		if link.LinkPath == "" {
+			// Probably a bug in link-finding logic, so log the block content.
+			log.Warning("Empty asset link in block content: ", block.Content.Markdown)
+			continue
+		}
+
+		asset, ok := g.FindAsset(link.LinkPath)
+		if !ok {
+			log.Fatalf("Asset not found: %s", link.LinkPath)
+		}
+
+		assetPath := asset.PathInSite
+		log.Debug("Linking ", block.ID, " to ", assetPath)
+		linkString := "![" + link.Label + "](" + assetPath + ")"
 		blockMarkdown = strings.Replace(blockMarkdown, link.Raw, linkString, 1)
 	}
 

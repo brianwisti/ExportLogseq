@@ -72,9 +72,9 @@ func TestGraph_FindAsset(t *testing.T) {
 	graph := logseq.NewGraph()
 	asset := logseq.NewAsset("assets/test.jpg")
 	_ = graph.AddAsset(&asset)
-	foundAsset, err := graph.FindAsset("assets/test.jpg")
+	foundAsset, ok := graph.FindAsset("assets/test.jpg")
 
-	assert.NoError(t, err)
+	assert.True(t, ok)
 	assert.Equal(t, &asset, foundAsset)
 }
 
@@ -82,18 +82,17 @@ func TestGraph_FindAsset_CaseInsensitive(t *testing.T) {
 	graph := logseq.NewGraph()
 	asset := logseq.NewAsset("assets/test.jpg")
 	_ = graph.AddAsset(&asset)
-	foundAsset, err := graph.FindAsset("ASSETS/TEST.JPG")
+	foundAsset, ok := graph.FindAsset("ASSETS/TEST.JPG")
 
-	assert.NoError(t, err)
+	assert.True(t, ok)
 	assert.Equal(t, &asset, foundAsset)
 }
 
 func TestGraph_FindAsset_NotFound(t *testing.T) {
 	graph := logseq.NewGraph()
-	_, err := graph.FindAsset("assets/test.jpg")
+	_, ok := graph.FindAsset("assets/test.jpg")
 
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, logseq.AssetNotFoundError{AssetPath: "assets/test.jpg"})
+	assert.False(t, ok)
 }
 
 func TestGraph_FindLinksToPage(t *testing.T) {
