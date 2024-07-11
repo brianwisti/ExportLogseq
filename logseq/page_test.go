@@ -47,8 +47,8 @@ func TestPage_Aliases_FromProperties(t *testing.T) {
 
 func TestPage_InContext(t *testing.T) {
 	page := logseq.NewEmptyPage()
-	page.Name = "Test Page"
-	page.PathInSite = "test-page"
+	page.Name = gofakeit.Word()
+	page.PathInSite = gofakeit.Word()
 	page.PathInGraph = "/test-page"
 
 	graph := *logseq.NewGraph()

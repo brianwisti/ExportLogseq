@@ -8,6 +8,7 @@ import (
 
 func BlockContent() *logseq.BlockContent {
 	page := Page()
+
 	return page.Root.Content
 }
 

@@ -25,6 +25,7 @@ func TestGraph_AddAsset(t *testing.T) {
 	err := graph.AddAsset(&asset)
 
 	assert.NoError(t, err)
+
 	assetKey := strings.ToLower(asset.PathInGraph)
 	addedAsset, ok := graph.Assets[assetKey]
 
@@ -45,10 +46,11 @@ func TestGraph_AddAsset_WithExistingAsset(t *testing.T) {
 func TestGraph_AddPage(t *testing.T) {
 	graph := logseq.NewGraph()
 	page := logseq.NewEmptyPage()
-	page.Name = "Test Page"
-	page.PathInSite = "test-page"
+	page.Name = gofakeit.Word()
+	page.PathInSite = gofakeit.Word()
 	err := graph.AddPage(&page)
 	assert.NoError(t, err)
+
 	pageKey := strings.ToLower(page.Name)
 	addedPage, ok := graph.Pages[pageKey]
 
@@ -59,8 +61,8 @@ func TestGraph_AddPage(t *testing.T) {
 func TestGraph_AddPage_WithExistingPage(t *testing.T) {
 	graph := logseq.NewGraph()
 	page := logseq.NewEmptyPage()
-	page.Name = "Test Page"
-	page.PathInSite = "test-page"
+	page.Name = gofakeit.Word()
+	page.PathInSite = gofakeit.Word()
 	_ = graph.AddPage(&page)
 	err := graph.AddPage(&page)
 
@@ -122,8 +124,8 @@ func TestGraph_FindLinksToPage(t *testing.T) {
 func TestGraph_FindPage(t *testing.T) {
 	graph := logseq.NewGraph()
 	page := logseq.NewEmptyPage()
-	page.Name = "Test Page"
-	page.PathInSite = "test-page"
+	page.Name = gofakeit.Word()
+	page.PathInSite = gofakeit.Word()
 	_ = graph.AddPage(&page)
 	foundPage, err := graph.FindPage("Test Page")
 
@@ -134,8 +136,8 @@ func TestGraph_FindPage(t *testing.T) {
 func TestGraph_FindPage_CaseInsensitive(t *testing.T) {
 	graph := logseq.NewGraph()
 	page := logseq.NewEmptyPage()
-	page.Name = "Test Page"
-	page.PathInSite = "test-page"
+	page.Name = gofakeit.Word()
+	page.PathInSite = gofakeit.Word()
 	_ = graph.AddPage(&page)
 	foundPage, err := graph.FindPage("test page")
 
@@ -154,8 +156,8 @@ func TestGraph_FindPage_NotFound(t *testing.T) {
 func TestGraph_FindPage_WithAlias(t *testing.T) {
 	graph := logseq.NewGraph()
 	page := logseq.NewEmptyPage()
-	page.Name = "Test Page"
-	page.PathInSite = "test-page"
+	page.Name = gofakeit.Word()
+	page.PathInSite = gofakeit.Word()
 	page.Root.Properties.Set("alias", "alias")
 	_ = graph.AddPage(&page)
 	foundPage, err := graph.FindPage("alias")
@@ -167,8 +169,8 @@ func TestGraph_FindPage_WithAlias(t *testing.T) {
 func TestGraph_Links(t *testing.T) {
 	graph := logseq.NewGraph()
 	page := logseq.NewEmptyPage()
-	page.Name = "Test Page"
-	page.PathInSite = "test-page"
+	page.Name = gofakeit.Word()
+	page.PathInSite = gofakeit.Word()
 	link := logseq.Link{
 		LinkPath: gofakeit.URL(),
 		Label:    gofakeit.Phrase(),
@@ -200,7 +202,9 @@ func TestGraph_PageLinks_Empty(t *testing.T) {
 func TestGraph_PageLinks(t *testing.T) {
 	graph := logseq.NewGraph()
 	page := logseq.NewEmptyPage()
+
 	graph.AddPage(&page)
+
 	pageName, label := PageName(), LinkLabel()
 	link := logseq.Link{
 		LinkPath: pageName,
@@ -220,8 +224,8 @@ func TestGraph_PublicGraph(t *testing.T) {
 	graph := logseq.NewGraph()
 
 	publicPage := logseq.NewEmptyPage()
-	publicPage.Name = "Test Page"
-	publicPage.PathInSite = "test-page"
+	publicPage.Name = gofakeit.Word()
+	publicPage.PathInSite = gofakeit.Word()
 	publicPage.Root.Properties.Set("public", "true")
 	_ = graph.AddPage(&publicPage)
 
@@ -244,8 +248,8 @@ func TestGraph_PublicGraph(t *testing.T) {
 func TestGraph_ResourceLinks(t *testing.T) {
 	graph := logseq.NewGraph()
 	page := logseq.NewEmptyPage()
-	page.Name = "Test Page"
-	page.PathInSite = "test-page"
+	page.Name = gofakeit.Word()
+	page.PathInSite = gofakeit.Word()
 	url, label := gofakeit.URL(), gofakeit.Phrase()
 	link := logseq.Link{
 		LinkPath: url,

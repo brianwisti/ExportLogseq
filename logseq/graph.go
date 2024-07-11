@@ -29,6 +29,7 @@ func LoadGraph(graphDir string) *Graph {
 
 	configFile := filepath.Join(graphDir, "logseq", "config.edn")
 	logseqConfig, err := LoadConfig(configFile)
+
 	if err != nil {
 		log.Fatal("loading Logseq config:", err)
 	}
@@ -45,6 +46,7 @@ func LoadGraph(graphDir string) *Graph {
 	assetsDir := filepath.Join(graphDir, "assets")
 	log.Info("Assets directory:", assetsDir)
 	assetFiles, err := filepath.Glob(filepath.Join(assetsDir, "*.*"))
+
 	if err != nil {
 		log.Fatal("listing asset files:", err)
 	}
@@ -58,6 +60,7 @@ func LoadGraph(graphDir string) *Graph {
 		asset := NewAsset("/assets/" + relPath)
 		asset.PathInSite = "/img/" + relPath
 		err = graph.AddAsset(&asset)
+
 		if err != nil {
 			log.Fatalf("adding asset %s: %v", assetFile, err)
 		}
@@ -70,6 +73,7 @@ func LoadGraph(graphDir string) *Graph {
 	pagesDir := filepath.Join(graphDir, "pages")
 	log.Info("Pages directory:", pagesDir)
 	pageFiles, err := filepath.Glob(filepath.Join(pagesDir, "*.md"))
+
 	if err != nil {
 		log.Fatal("listing page files:", err)
 	}
@@ -89,6 +93,7 @@ func LoadGraph(graphDir string) *Graph {
 	journalsDir := filepath.Join(graphDir, "journals")
 	log.Info("Journals directory:", journalsDir)
 	journalFiles, err := filepath.Glob(filepath.Join(journalsDir, "*.md"))
+
 	if err != nil {
 		log.Fatal("listing journal files:", err)
 	}
@@ -112,11 +117,12 @@ func LoadGraph(graphDir string) *Graph {
 func (g *Graph) AddAsset(asset *Asset) error {
 	assetKey := asset.PathInGraph
 	_, assetExists := g.Assets[assetKey]
+
 	if assetExists {
 		return AssetExistsError{asset.PathInGraph}
 	}
-	log.Debugf("Adding asset: %s", asset.PathInGraph)
 
+	log.Debugf("Adding asset: %s", asset.PathInGraph)
 	g.Assets[assetKey] = asset
 
 	return nil
@@ -126,6 +132,7 @@ func (g *Graph) AddAsset(asset *Asset) error {
 func (g *Graph) AddPage(page *Page) error {
 	pageKey := strings.ToLower(page.Name)
 	_, pageExists := g.Pages[pageKey]
+
 	if pageExists {
 		return PageExistsError{page.Name}
 	}
@@ -138,17 +145,20 @@ func (g *Graph) AddPage(page *Page) error {
 // FindAsset returns an asset by path.
 func (g *Graph) FindAsset(path string) (*Asset, bool) {
 	asset, ok := g.Assets[path]
+
 	return asset, ok
 }
 
 // FindLinksToPage returns all links to a Page.
 func (g *Graph) FindLinksToPage(page *Page) []Link {
 	log.Info("Finding links in graph to: ", page)
+
 	links := []Link{}
 
 	for _, link := range g.PageLinks() {
 		linkTarget := link.LinkPath
 		log.Debug("Checking link from ", link.LinksFrom, " to ", linkTarget)
+
 		if page.Name == linkTarget {
 			log.Debug("Found link to ", page.Name, " in ", link.LinksFrom)
 			links = append(links, link)
@@ -158,10 +168,11 @@ func (g *Graph) FindLinksToPage(page *Page) []Link {
 	return links
 }
 
-// FindPage returns a page by name or alias
+// FindPage returns a page by name or alias.
 func (g *Graph) FindPage(name string) (*Page, error) {
 	pageKey := strings.ToLower(name)
 	page, ok := g.Pages[pageKey]
+
 	if ok {
 		return page, nil
 	}
@@ -217,6 +228,7 @@ func (g *Graph) PublicGraph() *Graph {
 		if link.LinkType == LinkTypeAsset {
 			log.Debugf("Checking asset %s", link.LinkPath)
 			asset, ok := g.FindAsset(link.LinkPath)
+
 			if !ok {
 				log.Fatalf("Asset not in original graph: [%s]", link.LinkPath)
 			}
@@ -296,9 +308,11 @@ func (g *Graph) prepBlockForSite(block *Block) {
 	for i := 0; i < len(pageLinksFromBlock); i++ {
 		link := pageLinksFromBlock[i]
 		log.Debug("Raw link: ", link.Raw)
+
 		if link.LinkPath == "" {
 			// Probably a bug in link-finding logic, so log the block content.
 			log.Warning("Empty link in block content: ", block.Content.Markdown)
+
 			continue
 		}
 
@@ -325,9 +339,11 @@ func (g *Graph) prepBlockForSite(block *Block) {
 	for i := 0; i < len(assetLinksFromBlock); i++ {
 		link := assetLinksFromBlock[i]
 		log.Debug("Raw asset link: ", link.Raw)
+
 		if link.LinkPath == "" {
 			// Probably a bug in link-finding logic, so log the block content.
 			log.Warning("Empty asset link in block content: ", block.Content.Markdown)
+
 			continue
 		}
 
@@ -348,9 +364,12 @@ func (g *Graph) prepBlockForSite(block *Block) {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
 	)
+
 	var buf bytes.Buffer
+
 	if err := md.Convert([]byte(block.Content.Markdown), &buf); err != nil {
 		log.Fatal("converting markdown to HTML:", err)
 	}
+
 	block.Content.HTML = buf.String()
 }

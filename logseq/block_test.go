@@ -68,8 +68,9 @@ func TestBlock_IsPublic_Cascading(t *testing.T) {
 
 	for _, tt := range isPublicTests {
 		block := logseq.NewEmptyBlock()
-		block.Properties.Set("public", tt.PropValue)
 		child := logseq.NewEmptyBlock()
+
+		block.Properties.Set("public", tt.PropValue)
 		block.AddChild(child)
 
 		assert.Equal(t, tt.want, child.IsPublic())
@@ -78,8 +79,9 @@ func TestBlock_IsPublic_Cascading(t *testing.T) {
 
 func TestBlock_IsPublic_OverridesParent(t *testing.T) {
 	block := logseq.NewEmptyBlock()
-	block.Properties.Set("public", "false")
 	child := logseq.NewEmptyBlock()
+
+	block.Properties.Set("public", "false")
 	block.AddChild(child)
 	child.Properties.Set("public", "true")
 

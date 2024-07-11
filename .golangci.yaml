@@ -1,0 +1,29 @@
+# As this is a learning project, I want quality checks to be strict and pervasive.
+run:
+  tests: true
+linters:
+  enable-all: true
+  disable:
+    - execinquery
+    - gomnd
+  fast: true
+linters-settings:
+  depguard:
+    rules:
+      main:
+        allow:
+          - $gostd
+          - export-logseq/logseq
+          - github.com/brianvoe/gofakeit/v7
+          - github.com/google/uuid
+          - github.com/gosimple/slug
+          - github.com/pkg/errors
+          - github.com/sirupsen/logrus
+          - github.com/stretchr/testify/assert
+          - github.com/stretchr/testify/require
+          - github.com/yuin/goldmark
+          - olympos.io/encoding/edn
+  tagliatelle:
+    case:
+      rules:
+        json: snake

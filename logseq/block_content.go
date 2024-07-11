@@ -19,14 +19,22 @@ type BlockContent struct {
 
 func NewEmptyBlockContent() *BlockContent {
 	return &BlockContent{
-		Links: map[string]Link{},
+		BlockID:  "",
+		Markdown: "",
+		HTML:     "",
+		Callout:  "",
+		Links:    map[string]Link{},
 	}
 }
 
 func NewBlockContent(block *Block, rawSource string) *BlockContent {
 	content := NewEmptyBlockContent()
 	content.BlockID = block.ID
-	content.SetMarkdown(rawSource)
+	err := content.SetMarkdown(rawSource)
+
+	if err != nil {
+		log.Errorf("Error setting markdown content: %s", err)
+	}
 
 	return content
 }
@@ -55,6 +63,7 @@ func (bc *BlockContent) FindLink(path string) (Link, bool) {
 
 func (bc *BlockContent) IsCodeBlock() bool {
 	codeBlockRe := regexp.MustCompile("```")
+
 	return codeBlockRe.MatchString(bc.Markdown)
 }
 
@@ -69,11 +78,14 @@ func (bc *BlockContent) SetMarkdown(markdown string) error {
 		if opener != closer {
 			log.Fatalf("(%s) callout mismatch: %s != %s", bc.BlockID, opener, closer)
 		}
+
 		bc.Callout = strings.ToLower(opener)
 		log.Debugf("(%s) found callout: %s", bc.BlockID, bc.Callout)
+
 		markdown = calloutRe.ReplaceAllString(markdown, body)
 		log.Debug("New Markdown: ", markdown)
 	}
+
 	bc.Markdown = markdown
 
 	err := bc.findLinks()
@@ -114,6 +126,7 @@ func (bc *BlockContent) findPageLinks() {
 			IsEmbed:   false,
 		}
 		_, err := bc.AddLink(link)
+
 		if err != nil {
 			log.Errorf("Error adding link to page: %s", err)
 		}

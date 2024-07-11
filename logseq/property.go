@@ -17,6 +17,7 @@ func (p *Property) String() string {
 	if p.IsPageLink() {
 		return strings.TrimSuffix(strings.TrimPrefix(p.Value, "[["), "]]")
 	}
+
 	return p.Value
 }
 

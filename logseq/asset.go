@@ -10,6 +10,7 @@ type Asset struct {
 func NewAsset(pathInGraph string) Asset {
 	return Asset{
 		PathInGraph: pathInGraph,
+		PathInSite:  pathInGraph,
 	}
 }
 

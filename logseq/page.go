@@ -66,9 +66,11 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 	nameSteps := strings.Split(fullPageName, "/")
 	title := nameSteps[len(nameSteps)-1]
 	slugSteps := []string{}
+
 	for _, step := range nameSteps {
 		slugSteps = append(slugSteps, slug.Make(step))
 	}
+
 	pathInSite := strings.Join(slugSteps, "/")
 
 	// Process each line of fullPageName
@@ -95,8 +97,10 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 	if err != nil {
 		return Page{}, errors.New("finding blocks: " + err.Error())
 	}
+
 	if len(blocks) == 0 {
 		log.Warn("No root block found in page: ", fullPageName)
+
 		blocks = []*Block{NewEmptyBlock()}
 	}
 
@@ -156,7 +160,7 @@ func (p *Page) String() string {
 	return fmt.Sprintf("<Page: %s>", p.Name)
 }
 
-// SetRoot assign's page root block and sets AllBlocks to root's branches
+// SetRoot assign's page root block and sets AllBlocks to root's branches.
 func (p *Page) SetRoot(root *Block) {
 	p.Root = root
 	p.AllBlocks = []*Block{}
@@ -171,8 +175,9 @@ func (p *Page) addTree(block *Block) {
 }
 
 func loadPageLines(file *os.File) ([]PageLine, error) {
-	scanner := bufio.NewScanner(file)
 	var lines []PageLine
+
+	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -234,6 +239,7 @@ func findBlocks(page *Page, lines []PageLine) ([]*Block, error) {
 		// Ensure that the current line is indented correctly
 		if line.Indent != currentIndent {
 			errMsg := fmt.Sprintf("mismatched indent: %v", line)
+
 			return blocks, errors.New(errMsg)
 		}
 
@@ -246,6 +252,7 @@ func findBlocks(page *Page, lines []PageLine) ([]*Block, error) {
 		blocks = append(blocks, block)
 		placeBlock(block, blockStack)
 	}
+
 	log.Debug("Blocks: ", blocks)
 
 	return blocks, nil
@@ -260,11 +267,13 @@ func placeBlock(block *Block, blockStack *BlockStack) *BlockStack {
 				topBlock.AddChild(block)
 				log.Debug("Top block: ", topBlock)
 				blockStack.Push(block)
+
 				break
 			}
 
 			blockStack.Pop()
 		}
 	}
+
 	return blockStack
 }

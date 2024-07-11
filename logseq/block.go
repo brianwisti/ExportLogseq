@@ -40,6 +40,7 @@ func NewBlock(page *Page, sourceLines []string, depth int) *Block {
 		if propertyMatch != nil {
 			prop_name, prop_value := propertyMatch[1], propertyMatch[2]
 			properties.Set(prop_name, prop_value)
+
 			continue
 		}
 
@@ -93,7 +94,7 @@ func (b *Block) IsPublic() bool {
 	return false
 }
 
-// Links returns all links found in the block
+// Links returns all links found in the block.
 func (b *Block) Links() []Link {
 	links := []Link{}
 
@@ -124,6 +125,7 @@ func (bs *BlockStack) Pop() *Block {
 	lastIndex := len(bs.Blocks) - 1
 	top := bs.Blocks[lastIndex]
 	bs.Blocks = bs.Blocks[:lastIndex]
+
 	return top
 }
 

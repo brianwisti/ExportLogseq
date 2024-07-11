@@ -113,7 +113,7 @@ func TestBlockContent_IsCodeBlock(t *testing.T) {
 
 func TestBlockContent_SetMarkdown(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
-	markdown := "test"
+	markdown := gofakeit.Sentence(5)
 	err := content.SetMarkdown(markdown)
 
 	assert.NoError(t, err)
