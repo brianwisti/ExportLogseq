@@ -131,7 +131,7 @@ func TestPage_Links_FromRoot(t *testing.T) {
 	link, _ = page.Root.Content.AddLink(link)
 	links := page.Links()
 
-	assert.Contains(t, links, &link)
+	assert.Contains(t, links, link)
 }
 
 func TestPage_Properties_Empty(t *testing.T) {

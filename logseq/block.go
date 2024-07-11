@@ -10,10 +10,10 @@ import (
 
 type Block struct {
 	ID         string        `json:"id"`
-	Page       *Page         `json:"-"` // Page that contains this block
+	PageName   string        `json:"-"` // Page that contains this block
 	Content    *BlockContent `json:"content"`
 	Properties *PropertyMap  `json:"properties,omitempty"`
-	Depth      int           `json:"-"`
+	Depth      int           `json:"depth,omitempty"`
 	Parent     *Block        `json:"-"`
 	Children   []*Block      `json:"children,omitempty"`
 }
@@ -25,7 +25,7 @@ func NewEmptyBlock() *Block {
 		Content:    content,
 		Properties: NewPropertyMap(),
 	}
-	content.Block = &block
+	content.BlockID = block.ID
 
 	return &block
 }
@@ -49,7 +49,7 @@ func NewBlock(page *Page, sourceLines []string, depth int) *Block {
 	uuidString := uuid.New().String()
 	idProp, _ := properties.Get("id")
 
-	if idProp != nil {
+	if idProp.Value != "" {
 		uuidString = idProp.Value
 	} else {
 		properties.Set("id", uuidString)
@@ -57,7 +57,7 @@ func NewBlock(page *Page, sourceLines []string, depth int) *Block {
 
 	block := Block{
 		ID:         uuidString,
-		Page:       page,
+		PageName:   page.Name,
 		Depth:      depth,
 		Properties: properties,
 	}
@@ -74,12 +74,11 @@ func (b *Block) AddChild(child *Block) {
 }
 
 func (b *Block) InContext(g Graph) (string, error) {
-	pagePath, err := b.Page.InContext(g)
-	if err != nil {
-		return "Setting block context", err
+	if b.PageName == "" {
+		return "Setting block context", fmt.Errorf("Block %s has no page name", b.ID)
 	}
 
-	return pagePath + "#" + b.ID, nil
+	return "/" + b.PageName + "#" + b.ID, nil
 }
 
 func (b *Block) IsPublic() bool {
@@ -95,8 +94,8 @@ func (b *Block) IsPublic() bool {
 }
 
 // Links returns all links found in the block
-func (b *Block) Links() []*Link {
-	links := []*Link{}
+func (b *Block) Links() []Link {
+	links := []Link{}
 
 	for _, link := range b.Content.Links {
 		links = append(links, link)
@@ -106,13 +105,7 @@ func (b *Block) Links() []*Link {
 }
 
 func (b *Block) String() string {
-	pageName := "NO PAGE"
-
-	if b.Page != nil {
-		pageName = b.Page.Name
-	}
-
-	return fmt.Sprintf("<Block: %s#%s>", pageName, b.ID)
+	return fmt.Sprintf("<Block: %s#%s>", b.PageName, b.ID)
 }
 
 type BlockStack struct {

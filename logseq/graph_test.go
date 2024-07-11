@@ -117,7 +117,7 @@ func TestGraph_FindLinksToPage(t *testing.T) {
 
 	links := graph.FindLinksToPage(&toPage)
 	assert.NotEmpty(t, links)
-	assert.Contains(t, links, &link)
+	assert.Contains(t, links, link)
 }
 
 func TestGraph_FindPage(t *testing.T) {
@@ -181,7 +181,7 @@ func TestGraph_Links(t *testing.T) {
 	links := graph.Links()
 
 	assert.NotEmpty(t, links)
-	assert.Contains(t, links, &link)
+	assert.Contains(t, links, link)
 }
 
 func TestGraph_Links_Empty(t *testing.T) {
@@ -214,7 +214,7 @@ func TestGraph_PageLinks(t *testing.T) {
 
 	links := graph.PageLinks()
 	assert.NotEmpty(t, links)
-	assert.Contains(t, links, &link)
+	assert.Contains(t, links, link)
 }
 
 func TestGraph_PublicGraph(t *testing.T) {
@@ -258,5 +258,5 @@ func TestGraph_ResourceLinks(t *testing.T) {
 	links := graph.ResourceLinks()
 
 	assert.NotEmpty(t, links)
-	assert.Contains(t, links, &link)
+	assert.Contains(t, links, link)
 }

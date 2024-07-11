@@ -2,6 +2,7 @@ package logseq
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -9,21 +10,22 @@ import (
 
 // BlockContent represents the content of a block in a Logseq graph.
 type BlockContent struct {
-	Block    *Block           `json:"-"` // Block that contains this content
-	Markdown string           `json:"markdown"`
-	HTML     string           `json:"html"`
-	Links    map[string]*Link `json:"links"`
+	BlockID  string          `json:"block_id"` // Block that contains this content
+	Markdown string          `json:"markdown"`
+	HTML     string          `json:"html"`
+	Links    map[string]Link `json:"links"`
+	Callout  string          `json:"callout"`
 }
 
 func NewEmptyBlockContent() *BlockContent {
 	return &BlockContent{
-		Links: map[string]*Link{},
+		Links: map[string]Link{},
 	}
 }
 
 func NewBlockContent(block *Block, rawSource string) *BlockContent {
 	content := NewEmptyBlockContent()
-	content.Block = block
+	content.BlockID = block.ID
 	content.SetMarkdown(rawSource)
 
 	return content
@@ -31,21 +33,21 @@ func NewBlockContent(block *Block, rawSource string) *BlockContent {
 
 // AddLink adds a link to the block content.
 func (bc *BlockContent) AddLink(link Link) (Link, error) {
-	log.Debugf("Adding link from block %s: %s", bc.Block, link.LinkPath)
+	log.Debugf("Adding link from block %s: %s", bc.BlockID, link.LinkPath)
 
 	_, ok := bc.FindLink(link.LinkPath)
 	if ok {
 		return Link{}, ErrorDuplicateLink{link.LinkPath}
 	}
 
-	link.LinksFrom = bc.Block
-	bc.Links[link.LinkPath] = &link
+	link.LinksFrom = bc.BlockID
+	bc.Links[link.LinkPath] = link
 
 	return link, nil
 }
 
 // FindLink returns a link by path.
-func (bc *BlockContent) FindLink(path string) (*Link, bool) {
+func (bc *BlockContent) FindLink(path string) (Link, bool) {
 	link, ok := bc.Links[path]
 
 	return link, ok
@@ -58,6 +60,20 @@ func (bc *BlockContent) IsCodeBlock() bool {
 
 // SetMarkdown sets the markdown content of the block.
 func (bc *BlockContent) SetMarkdown(markdown string) error {
+	calloutRe := regexp.MustCompile(`(?sm)#\+BEGIN_(\S+)\n(.+?)\n#\+END_(\S+)`)
+	calloutMatch := calloutRe.FindStringSubmatch(markdown)
+
+	if calloutMatch != nil {
+		opener, body, closer := calloutMatch[1], calloutMatch[2], calloutMatch[3]
+
+		if opener != closer {
+			log.Fatalf("(%s) callout mismatch: %s != %s", bc.BlockID, opener, closer)
+		}
+		bc.Callout = strings.ToLower(opener)
+		log.Infof("(%s) found callout: %s", bc.BlockID, bc.Callout)
+		markdown = calloutRe.ReplaceAllString(markdown, body)
+		log.Debug("New Markdown: ", markdown)
+	}
 	bc.Markdown = markdown
 
 	err := bc.findLinks()
@@ -90,11 +106,12 @@ func (bc *BlockContent) findPageLinks() {
 		raw, pageName := match[0], match[1]
 		log.Debugf("Found page link: [%s] -> %s", raw, pageName)
 		link := Link{
-			Raw:      raw,
-			LinkPath: pageName,
-			Label:    pageName,
-			LinkType: LinkTypePage,
-			IsEmbed:  false,
+			Raw:       raw,
+			LinksFrom: bc.BlockID,
+			LinkPath:  pageName,
+			Label:     pageName,
+			LinkType:  LinkTypePage,
+			IsEmbed:   false,
 		}
 		_, err := bc.AddLink(link)
 		if err != nil {
@@ -117,11 +134,12 @@ func (bc *BlockContent) findResourceLinks() error {
 		}
 
 		link := Link{
-			Raw:      raw,
-			LinkPath: resourceUrl,
-			Label:    label,
-			LinkType: linkType,
-			IsEmbed:  isEmbed == "!",
+			Raw:       raw,
+			LinksFrom: bc.BlockID,
+			LinkPath:  resourceUrl,
+			Label:     label,
+			LinkType:  linkType,
+			IsEmbed:   isEmbed == "!",
 		}
 
 		_, err := bc.AddLink(link)

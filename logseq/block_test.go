@@ -97,7 +97,7 @@ func TestBlock_Links(t *testing.T) {
 	link, _ = block.Content.AddLink(link)
 	links := block.Links()
 
-	assert.Contains(t, links, &link)
+	assert.Contains(t, links, link)
 }
 
 func TestBlock_Links_Empty(t *testing.T) {

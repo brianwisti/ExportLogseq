@@ -37,27 +37,30 @@ func (p *Property) IsPageLink() bool {
 }
 
 type PropertyMap struct {
-	Properties map[string]*Property
+	Properties map[string]Property
 }
 
 func NewPropertyMap() *PropertyMap {
-	return &PropertyMap{
-		Properties: map[string]*Property{},
-	}
+	return &PropertyMap{}
 }
 
-func (pm *PropertyMap) Get(name string) (*Property, bool) {
-	if pm.Properties[name] == nil {
-		return nil, false
+func (pm *PropertyMap) Get(name string) (Property, bool) {
+	prop, ok := pm.Properties[name]
+	if ok {
+		return prop, true
 	}
 
-	return pm.Properties[name], true
+	return Property{}, false
 }
 
 func (pm *PropertyMap) Set(name string, value string) {
-	pm.Properties[name] = &Property{
+	if pm.Properties == nil {
+		pm.Properties = map[string]Property{}
+	}
+
+	pm.Properties[name] = Property{
 		Name:  name,
-		Value: value,
+		Value: strings.TrimSpace(value),
 	}
 }
 

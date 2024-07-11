@@ -13,7 +13,7 @@ func TestNewEmptyBlockContent(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
 
 	assert.NotNil(t, content)
-	assert.Empty(t, content.Block)
+	assert.Empty(t, content.BlockID)
 	assert.Empty(t, content.Links)
 }
 
@@ -23,7 +23,7 @@ func TestNewBlockContent(t *testing.T) {
 	content := logseq.NewBlockContent(block, rawSource)
 
 	assert.NotNil(t, content)
-	assert.Equal(t, block, content.Block)
+	assert.Equal(t, block.ID, content.BlockID)
 }
 
 func TestBlockContent_AddLink(t *testing.T) {
@@ -50,7 +50,7 @@ func TestBlockContent_AddLink(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, content.Links)
 
-		assert.Equal(t, content.Block, addedLink.LinksFrom)
+		assert.Equal(t, content.BlockID, addedLink.LinksFrom)
 		assert.Equal(t, link.LinkPath, addedLink.LinkPath)
 		assert.Equal(t, link.Label, addedLink.Label)
 		assert.Equal(t, link.LinkType, addedLink.LinkType)
@@ -80,13 +80,13 @@ func TestBlockContent_FindLink(t *testing.T) {
 	content := logseq.NewEmptyBlockContent()
 	linkPath := gofakeit.URL()
 	link := logseq.Link{
-		LinksFrom: content.Block,
+		LinksFrom: content.BlockID,
 		LinkPath:  linkPath,
 		Label:     gofakeit.Phrase(),
 		LinkType:  logseq.LinkTypeResource,
 		IsEmbed:   false,
 	}
-	content.Links[linkPath] = &link
+	content.Links[linkPath] = link
 	foundLink, ok := content.FindLink(linkPath)
 
 	assert.True(t, ok)
@@ -100,7 +100,7 @@ func TestBlockContent_FindLink_NotFound(t *testing.T) {
 	foundLink, ok := content.FindLink(linkPath)
 
 	assert.False(t, ok)
-	assert.Nil(t, foundLink)
+	assert.Empty(t, foundLink)
 }
 
 func TestBlockContent_IsCodeBlock(t *testing.T) {

@@ -93,7 +93,7 @@ func TestPropertyMap_Get_NotFound(t *testing.T) {
 	pm := logseq.NewPropertyMap()
 	prop, ok := pm.Get("test")
 	assert.False(t, ok)
-	assert.Nil(t, prop)
+	assert.Empty(t, prop)
 }
 
 func TestPropertyMap_Set(t *testing.T) {

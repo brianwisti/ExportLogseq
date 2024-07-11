@@ -7,6 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 )
 
 type Graph struct {
@@ -144,9 +145,9 @@ func (g *Graph) FindAsset(path string) (*Asset, error) {
 }
 
 // FindLinksToPage returns all links to a Page.
-func (g *Graph) FindLinksToPage(page *Page) []*Link {
+func (g *Graph) FindLinksToPage(page *Page) []Link {
 	log.Info("Finding links in graph to: ", page)
-	links := []*Link{}
+	links := []Link{}
 
 	for _, link := range g.PageLinks() {
 		linkTarget := link.LinkPath
@@ -180,8 +181,8 @@ func (g *Graph) FindPage(name string) (*Page, error) {
 }
 
 // Links returns all links found in the graph.
-func (g *Graph) Links() []*Link {
-	links := []*Link{}
+func (g *Graph) Links() []Link {
+	links := []Link{}
 
 	for _, page := range g.Pages {
 		links = append(links, page.Links()...)
@@ -191,8 +192,8 @@ func (g *Graph) Links() []*Link {
 }
 
 // PageLinks returns all page links found in the graph.
-func (g *Graph) PageLinks() []*Link {
-	links := []*Link{}
+func (g *Graph) PageLinks() []Link {
+	links := []Link{}
 
 	for _, link := range g.Links() {
 		if link.LinkType == LinkTypePage {
@@ -238,8 +239,8 @@ func (g *Graph) PutPagesInContext() {
 }
 
 // ResourceLinks returns all resource links found in the graph.
-func (g *Graph) ResourceLinks() []*Link {
-	links := []*Link{}
+func (g *Graph) ResourceLinks() []Link {
+	links := []Link{}
 
 	for _, link := range g.Links() {
 		if link.LinkType == LinkTypeResource {
@@ -263,7 +264,7 @@ func (g *Graph) prepPageForSite(page *Page) {
 
 func (g *Graph) prepBlockForSite(block *Block) {
 	blockMarkdown := block.Content.Markdown
-	pageLinksFromBlock := []*Link{}
+	pageLinksFromBlock := []Link{}
 
 	for _, link := range block.Content.Links {
 		if link.LinkType == LinkTypePage {
@@ -290,7 +291,7 @@ func (g *Graph) prepBlockForSite(block *Block) {
 			if _, ok := err.(DisconnectedPageError); ok {
 				log.Fatalf("Linking page: %v", err)
 			} else {
-				log.Warnf("Block %v placeholder link: >%v<", block.ID, link.Label)
+				log.Debugf("Block %v placeholder link: >%v<", block.ID, link.Label)
 			}
 		}
 
@@ -306,8 +307,11 @@ func (g *Graph) prepBlockForSite(block *Block) {
 	log.Debug("Final block Markdown: ", blockMarkdown)
 	block.Content.Markdown = blockMarkdown
 
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+	)
 	var buf bytes.Buffer
-	if err := goldmark.Convert([]byte(block.Content.Markdown), &buf); err != nil {
+	if err := md.Convert([]byte(block.Content.Markdown), &buf); err != nil {
 		log.Fatal("converting markdown to HTML:", err)
 	}
 	block.Content.HTML = buf.String()

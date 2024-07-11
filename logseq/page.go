@@ -21,8 +21,9 @@ type PageLine struct {
 }
 
 type Page struct {
-	Name        string   `json:"name"`
+	Name        string   `json:"-"`
 	PathInSite  string   `json:"path"`
+	Title       string   `json:"title"`
 	PathInGraph string   `json:"-"`
 	Kind        string   `json:"kind"`
 	Root        *Block   `json:"root"`
@@ -63,6 +64,7 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 	}
 
 	nameSteps := strings.Split(fullPageName, "/")
+	title := nameSteps[len(nameSteps)-1]
 	slugSteps := []string{}
 	for _, step := range nameSteps {
 		slugSteps = append(slugSteps, slug.Make(step))
@@ -83,6 +85,7 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 
 	page := Page{
 		Name:        fullPageName,
+		Title:       title,
 		PathInGraph: pathInGraph,
 		PathInSite:  pathInSite,
 		Kind:        "page",
@@ -134,8 +137,8 @@ func (p *Page) IsPublic() bool {
 }
 
 // Links returns links collected from all blocks in the page.
-func (p *Page) Links() []*Link {
-	links := []*Link{}
+func (p *Page) Links() []Link {
+	links := []Link{}
 
 	for _, block := range p.AllBlocks {
 		links = append(links, block.Links()...)
