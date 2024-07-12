@@ -45,32 +45,6 @@ func TestPage_Aliases_FromProperties(t *testing.T) {
 	}
 }
 
-func TestPage_InContext(t *testing.T) {
-	page := logseq.NewEmptyPage()
-	page.Name = gofakeit.Word()
-	page.PathInSite = gofakeit.Word()
-	page.PathInGraph = "/test-page"
-
-	graph := *logseq.NewGraph()
-	graph.AddPage(&page)
-	got, err := page.InContext(graph)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "/test-page", got)
-}
-
-func TestPage_InContext_WithGraphError(t *testing.T) {
-	page := logseq.NewEmptyPage()
-	page.Name = "Test Page"
-	page.PathInSite = "test-page"
-	page.PathInGraph = "/test-page"
-
-	graph := *logseq.NewGraph()
-	_, err := page.InContext(graph)
-
-	assert.ErrorIs(t, err, logseq.DisconnectedPageError{PageName: "Test Page"})
-}
-
 func TestPage_IsPlaceholder(t *testing.T) {
 	isPlaceholderTests := []struct {
 		PathInGraph string

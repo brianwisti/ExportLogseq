@@ -8,15 +8,19 @@ import (
 	"export-logseq/logseq"
 )
 
+func AssetPath() string {
+	return "assets/test.jpg"
+}
+
 func TestNewAsset(t *testing.T) {
-	pathInGraph := "assets/test.jpg"
+	pathInGraph := AssetPath()
 	asset := logseq.NewAsset(pathInGraph)
 
 	assert.Equal(t, pathInGraph, asset.PathInGraph)
 }
 
 func TestAsset_InContext(t *testing.T) {
-	pathInGraph := "assets/test.jpg"
+	pathInGraph := AssetPath()
 	asset := logseq.Asset{
 		PathInGraph: pathInGraph,
 	}
@@ -30,7 +34,7 @@ func TestAsset_InContext(t *testing.T) {
 
 func TestAsset_InContext_NotFound(t *testing.T) {
 	asset := logseq.Asset{
-		PathInGraph: "assets/test.jpg",
+		PathInGraph: AssetPath(),
 	}
 	g := *logseq.NewGraph()
 	_, err := asset.InContext(g)

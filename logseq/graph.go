@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 )
@@ -43,72 +44,23 @@ func LoadGraph(graphDir string) *Graph {
 		log.Fatal("Unsupported preferred format:", logseqConfig.PreferredFormat)
 	}
 
-	assetsDir := filepath.Join(graphDir, "assets")
-	log.Info("Assets directory:", assetsDir)
-	assetFiles, err := filepath.Glob(filepath.Join(assetsDir, "*.*"))
+	err = graph.loadAssets()
 
 	if err != nil {
-		log.Fatal("listing asset files:", err)
+		log.Fatal("Loading Assets: ", err)
 	}
 
-	for _, assetFile := range assetFiles {
-		relPath, err := filepath.Rel(assetsDir, assetFile)
-		if err != nil {
-			log.Fatal("calculating relative path for asset:", err)
-		}
+	pageDirs := []string{"pages", "journals"}
 
-		asset := NewAsset("/assets/" + relPath)
-		asset.PathInSite = "/img/" + relPath
-		err = graph.AddAsset(&asset)
+	for _, pageDir := range pageDirs {
+		err = graph.loadPagesFromDir("pages")
 
 		if err != nil {
-			log.Fatalf("adding asset %s: %v", assetFile, err)
+			log.Fatalf("Loading pages from %s: %v", pageDir, err)
 		}
 	}
 
-	if err != nil {
-		log.Fatal("listing asset files:", err)
-	}
-
-	pagesDir := filepath.Join(graphDir, "pages")
-	log.Info("Pages directory:", pagesDir)
-	pageFiles, err := filepath.Glob(filepath.Join(pagesDir, "*.md"))
-
-	if err != nil {
-		log.Fatal("listing page files:", err)
-	}
-
-	for _, pageFile := range pageFiles {
-		page, err := LoadPage(pageFile, pagesDir)
-		if err != nil {
-			log.Fatalf("loading page %s: %v", pageFile, err)
-		}
-
-		err = graph.AddPage(&page)
-		if err != nil {
-			log.Fatalf("adding page %s: %v", pageFile, err)
-		}
-	}
-
-	journalsDir := filepath.Join(graphDir, "journals")
-	log.Info("Journals directory:", journalsDir)
-	journalFiles, err := filepath.Glob(filepath.Join(journalsDir, "*.md"))
-
-	if err != nil {
-		log.Fatal("listing journal files:", err)
-	}
-
-	for _, journalFile := range journalFiles {
-		page, err := LoadPage(journalFile, journalsDir)
-		if err != nil {
-			log.Fatalf("loading journal %s: %v", journalFile, err)
-		}
-
-		err = graph.AddPage(&page)
-		if err != nil {
-			log.Fatalf("adding journal %s: %v", journalFile, err)
-		}
-	}
+	graph.PutPagesInContext()
 
 	return graph
 }
@@ -199,6 +151,19 @@ func (g *Graph) Links() []Link {
 	return links
 }
 
+// AssetLinks returns all asset links found in the graph.
+func (g *Graph) AssetLinks() []Link {
+	links := []Link{}
+
+	for _, link := range g.Links() {
+		if link.LinkType == LinkTypeAsset {
+			links = append(links, link)
+		}
+	}
+
+	return links
+}
+
 // PageLinks returns all page links found in the graph.
 func (g *Graph) PageLinks() []Link {
 	links := []Link{}
@@ -280,6 +245,58 @@ func (g *Graph) ResourceLinks() []Link {
 	return links
 }
 
+func (g *Graph) loadAssets() error {
+	assetsDir := filepath.Join(g.GraphDir, "assets")
+	log.Info("Assets directory:", assetsDir)
+	assetFiles, err := filepath.Glob(filepath.Join(assetsDir, "*.*"))
+
+	if err != nil {
+		return errors.Wrap(err, "listing asset files")
+	}
+
+	for _, assetFile := range assetFiles {
+		relPath, err := filepath.Rel(assetsDir, assetFile)
+		if err != nil {
+			return errors.Wrap(err, "calculating relative path for asset")
+		}
+
+		asset := NewAsset("/assets/" + relPath)
+		asset.PathInSite = "/img/" + relPath
+		err = g.AddAsset(&asset)
+
+		if err != nil {
+			return errors.Wrap(err, "adding asset " + assetFile)
+		}
+	}
+
+	return nil
+}
+
+func (g* Graph) loadPagesFromDir(subdir string) error {
+	pagesDir := filepath.Join(g.GraphDir, subdir)
+	log.Infof("Loading pages from %s", pagesDir)
+	pageFiles, err := filepath.Glob(filepath.Join(pagesDir, "*.md"))
+
+	if err != nil {
+		return errors.Wrap(err, "listing page files")
+	}
+
+	for _, pageFile := range pageFiles {
+		page, err := LoadPage(pageFile, pagesDir)
+
+		if err != nil {
+			return errors.Wrap(err, "loading page " + pageFile)
+		}
+
+		err = g.AddPage(&page)
+		if err != nil {
+			return errors.Wrap(err, "adding loaded page " + pageFile)
+		}
+	}
+
+	return nil
+}
+
 func (g *Graph) prepPageForSite(page *Page) {
 	blockCount := len(page.AllBlocks)
 	log.Debug("Prepping ", page.Name, " with ", blockCount, " blocks")
@@ -305,8 +322,7 @@ func (g *Graph) prepBlockForSite(block *Block) {
 	log.Debug("Prepping block ", block.ID, " with ", len(pageLinksFromBlock), " page links")
 	log.Debug("Initial block Markdown: ", blockMarkdown)
 
-	for i := 0; i < len(pageLinksFromBlock); i++ {
-		link := pageLinksFromBlock[i]
+	for _, link := range pageLinksFromBlock {
 		log.Debug("Raw link: ", link.Raw)
 
 		if link.LinkPath == "" {
@@ -336,8 +352,7 @@ func (g *Graph) prepBlockForSite(block *Block) {
 		blockMarkdown = strings.Replace(blockMarkdown, link.Raw, linkString, 1)
 	}
 
-	for i := 0; i < len(assetLinksFromBlock); i++ {
-		link := assetLinksFromBlock[i]
+	for _, link := range assetLinksFromBlock {
 		log.Debug("Raw asset link: ", link.Raw)
 
 		if link.LinkPath == "" {

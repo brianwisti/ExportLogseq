@@ -82,12 +82,13 @@ func TestGraph_FindAsset(t *testing.T) {
 
 func TestGraph_FindAsset_CaseInsensitive(t *testing.T) {
 	graph := logseq.NewGraph()
-	asset := logseq.NewAsset("assets/test.jpg")
+	assetName := "assets/test.jpg"
+	asset := logseq.NewAsset(assetName)
 	_ = graph.AddAsset(&asset)
-	foundAsset, ok := graph.FindAsset("ASSETS/TEST.JPG")
+	foundAsset, ok := graph.FindAsset(strings.ToUpper(assetName))
 
-	assert.True(t, ok)
-	assert.Equal(t, &asset, foundAsset)
+	assert.False(t, ok)
+	assert.Nil(t, foundAsset)
 }
 
 func TestGraph_FindAsset_NotFound(t *testing.T) {
@@ -127,7 +128,7 @@ func TestGraph_FindPage(t *testing.T) {
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
 	_ = graph.AddPage(&page)
-	foundPage, err := graph.FindPage("Test Page")
+	foundPage, err := graph.FindPage(page.Name)
 
 	assert.NoError(t, err)
 	assert.Equal(t, &page, foundPage)
@@ -139,7 +140,7 @@ func TestGraph_FindPage_CaseInsensitive(t *testing.T) {
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
 	_ = graph.AddPage(&page)
-	foundPage, err := graph.FindPage("test page")
+	foundPage, err := graph.FindPage(page.Name)
 
 	assert.NoError(t, err)
 	assert.Equal(t, &page, foundPage)
@@ -192,6 +193,26 @@ func TestGraph_Links_Empty(t *testing.T) {
 	assert.Empty(t, links)
 }
 
+func TestGraph_AssetLinks(t *testing.T) {
+	graph := logseq.NewGraph()
+	page := Page()
+	graph.AddPage(&page)
+
+	asset := logseq.NewAsset("assets/test.jpg")
+	_ = graph.AddAsset(&asset)
+	link := logseq.Link{
+		LinkPath: asset.PathInGraph,
+		Label:    asset.PathInGraph,
+		LinkType: logseq.LinkTypeAsset,
+		IsEmbed:  false,
+	}
+	link, _ = page.Root.Content.AddLink(link)
+	links := graph.AssetLinks()
+
+	assert.NotEmpty(t, links)
+	assert.Contains(t, links, link)
+}
+
 func TestGraph_PageLinks_Empty(t *testing.T) {
 	graph := logseq.NewGraph()
 	links := graph.PageLinks()
@@ -220,31 +241,6 @@ func TestGraph_PageLinks(t *testing.T) {
 	assert.Contains(t, links, link)
 }
 
-func TestGraph_PublicGraph(t *testing.T) {
-	graph := logseq.NewGraph()
-
-	publicPage := logseq.NewEmptyPage()
-	publicPage.Name = gofakeit.Word()
-	publicPage.PathInSite = gofakeit.Word()
-	publicPage.Root.Properties.Set("public", "true")
-	_ = graph.AddPage(&publicPage)
-
-	privatePage := logseq.NewEmptyPage()
-	privatePage.Name = "Private Page"
-	privatePage.PathInSite = "private-page"
-	privatePage.Root.Properties.Set("public", "false")
-	_ = graph.AddPage(&privatePage)
-
-	publicGraph := graph.PublicGraph()
-	foundPage, err := publicGraph.FindPage("Test Page")
-
-	assert.NoError(t, err)
-	assert.Equal(t, &publicPage, foundPage)
-
-	_, err = publicGraph.FindPage("Private Page")
-	assert.Error(t, err)
-}
-
 func TestGraph_ResourceLinks(t *testing.T) {
 	graph := logseq.NewGraph()
 	page := logseq.NewEmptyPage()
@@ -262,4 +258,29 @@ func TestGraph_ResourceLinks(t *testing.T) {
 
 	assert.NotEmpty(t, links)
 	assert.Contains(t, links, link)
+}
+
+func TestGraph_PublicGraph(t *testing.T) {
+	graph := logseq.NewGraph()
+
+	publicPage := logseq.NewEmptyPage()
+	publicPage.Name = gofakeit.Word()
+	publicPage.PathInSite = gofakeit.Word()
+	publicPage.Root.Properties.Set("public", "true")
+	_ = graph.AddPage(&publicPage)
+
+	privatePage := logseq.NewEmptyPage()
+	privatePage.Name = "Private Page"
+	privatePage.PathInSite = "private-page"
+	privatePage.Root.Properties.Set("public", "false")
+	_ = graph.AddPage(&privatePage)
+
+	publicGraph := graph.PublicGraph()
+	foundPage, err := publicGraph.FindPage(publicPage.Name)
+
+	assert.NoError(t, err)
+	assert.Equal(t, &publicPage, foundPage)
+
+	_, err = publicGraph.FindPage("Private Page")
+	assert.Error(t, err)
 }

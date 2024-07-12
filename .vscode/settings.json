@@ -23,4 +23,7 @@
     },
     "peacock.color": "#b880a4",
     "go.lintTool": "golangci-lint",
+    "go.formatFlags": [
+        "-s"
+    ],
 }

@@ -2,7 +2,6 @@ package logseq
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/gosimple/slug"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -60,7 +60,7 @@ func LoadPage(pageFile string, graphPath string) (Page, error) {
 
 	pathInGraph, err := filepath.Rel(graphPath, pageFile)
 	if err != nil {
-		return Page{}, errors.New("calculating path in graph: " + err.Error())
+		return Page{}, errors.Wrap(err, "calculating path in graph")
 	}
 
 	nameSteps := strings.Split(fullPageName, "/")
@@ -118,16 +118,6 @@ func (p *Page) Aliases() []string {
 	}
 
 	return aliasesProp.List()
-}
-
-// InContext returns the path of the page in the site.
-func (p *Page) InContext(graph Graph) (string, error) {
-	_, err := graph.FindPage(p.Name)
-	if err != nil {
-		return "", DisconnectedPageError{PageName: p.Name}
-	}
-
-	return "/" + p.PathInSite, nil
 }
 
 // IsPlaceholder returns true if the page is not a file on disk.
@@ -191,7 +181,7 @@ func loadPageLines(file *os.File) ([]PageLine, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, errors.New("scanning page lines: " + err.Error())
+		return nil, errors.Wrap(err, "scanning page lines")
 	}
 
 	return lines, nil
