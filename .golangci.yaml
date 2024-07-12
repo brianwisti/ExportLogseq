@@ -21,9 +21,10 @@ linters-settings:
           - github.com/brianvoe/gofakeit/v7
           - github.com/google/uuid
           - github.com/gosimple/slug
-          - github.com/lpernett/godotenv
           - github.com/pkg/errors
           - github.com/sirupsen/logrus
+          - github.com/alecthomas/kong
+          - github.com/bluegosolutions/kong-dotenv-go
           - github.com/stretchr/testify/assert
           - github.com/stretchr/testify/require
           - github.com/yuin/goldmark
