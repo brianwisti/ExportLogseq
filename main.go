@@ -40,9 +40,15 @@ func main() {
 	log.Info("SITE_DIR:", siteDir)
 
 	graph := logseq.LoadGraph(graphDir).PublicGraph()
+	exportDir := filepath.Join(siteDir, "assets", "exported")
+	err := os.MkdirAll(exportDir, 0755)
 
-	exportPath := filepath.Join(siteDir, "logseq.json")
-	exportFile, err := os.Create(exportPath)
+	if err != nil {
+		log.Fatalf("creating data export directory [%s]: %v", exportDir, err)
+	}
+
+	exportDataPath := filepath.Join(exportDir, "logseq.json")
+	exportFile, err := os.Create(exportDataPath)
 
 	if err != nil {
 		log.Fatal("creating export file:", err)
@@ -59,8 +65,7 @@ func main() {
 	}
 
 	// Export linked assets to site directory
-	siteRoot := filepath.Dir(filepath.Dir(siteDir))
-	assetDir := filepath.Join(siteRoot, "static")
+	assetDir := filepath.Join(siteDir, "static")
 
 	log.Infof("Exporting assets to: %s", assetDir)
 	err = os.MkdirAll(assetDir, 0755)
@@ -78,6 +83,15 @@ func main() {
 
 		targetPath := filepath.Join(assetDir, asset.PathInSite)
 		sourcePath := filepath.Join(graphDir, link.LinkPath)
+		targetDir := filepath.Dir(targetPath)
+		log.Debug("Exporting asset:", sourcePath, "→", targetDir)
+
+		err = os.MkdirAll(filepath.Dir(targetDir), 0755)
+
+		if err != nil {
+			log.Fatalf("creating target directory for assets: %v", err)
+		}
+
 		log.Debugf("Exporting asset: %s → %s", sourcePath, targetPath)
 		// Copy the file at sourcePath to targetPath
 		sourceFileStat, err := os.Stat(sourcePath)
@@ -99,6 +113,10 @@ func main() {
 				log.Debugf("source and target are the same file: %s", sourcePath)
 
 				continue
+			}
+		} else {
+			if !os.IsNotExist(err) {
+				log.Fatal("checking target file:", err)
 			}
 		}
 
@@ -126,6 +144,6 @@ func main() {
 	pageCount := len(graph.Pages)
 
 	log.Info("All done!")
-	log.Infof("Exported %d pages to: %s", pageCount, exportPath)
+	log.Infof("Exported %d pages to: %s", pageCount, exportDataPath)
 	log.Infof("Elapsed time: %s", elapsed)
 }

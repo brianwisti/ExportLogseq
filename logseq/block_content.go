@@ -46,7 +46,9 @@ func (bc *BlockContent) AddLink(link Link) (Link, error) {
 
 	_, ok := bc.FindLink(link.LinkPath)
 	if ok {
-		return Link{}, ErrorDuplicateLink{link.LinkPath}
+		log.Warnf("Duplicate link in block %s: %s", bc.BlockID, link.LinkPath)
+
+		return Link{}, nil
 	}
 
 	link.LinksFrom = bc.BlockID

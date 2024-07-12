@@ -72,8 +72,7 @@ func TestBlockContent_AddLink_Duplicate(t *testing.T) {
 	addedLink, err := content.AddLink(link)
 
 	assert.Empty(t, addedLink)
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, logseq.ErrorDuplicateLink{LinkPath: link.LinkPath})
+	assert.NoError(t, err)
 	assert.Equal(t, linkCount, len(content.Links))
 }
 
