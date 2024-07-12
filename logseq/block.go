@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 type Block struct {
@@ -30,7 +31,7 @@ func NewEmptyBlock() *Block {
 	return &block
 }
 
-func NewBlock(page *Page, sourceLines []string, depth int) *Block {
+func NewBlock(page *Page, sourceLines []string, depth int) (*Block, error) {
 	propertyRe := regexp.MustCompile("^([a-zA-Z][a-zA-Z0-9_-]*):: (.*)")
 	contentLines := []string{}
 	properties := NewPropertyMap()
@@ -63,10 +64,15 @@ func NewBlock(page *Page, sourceLines []string, depth int) *Block {
 		Properties: properties,
 	}
 	content := strings.Join(contentLines, "\n")
-	blockContent := NewBlockContent(&block, content)
+	blockContent, err := NewBlockContent(&block, content)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "creating block content")
+	}
+
 	block.Content = blockContent
 
-	return &block
+	return &block, nil
 }
 
 func (b *Block) AddChild(child *Block) {

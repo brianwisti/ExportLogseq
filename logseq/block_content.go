@@ -28,16 +28,16 @@ func NewEmptyBlockContent() *BlockContent {
 	}
 }
 
-func NewBlockContent(block *Block, rawSource string) *BlockContent {
+func NewBlockContent(block *Block, rawSource string) (*BlockContent, error) {
 	content := NewEmptyBlockContent()
 	content.BlockID = block.ID
 	err := content.SetMarkdown(rawSource)
 
 	if err != nil {
-		log.Errorf("Error setting markdown content: %s", err)
+		return nil, errors.Wrap(err, "setting markdown content")
 	}
 
-	return content
+	return content, nil
 }
 
 // AddLink adds a link to the block content.
@@ -98,9 +98,13 @@ func (bc *BlockContent) SetMarkdown(markdown string) error {
 }
 
 func (bc *BlockContent) findLinks() error {
-	bc.findPageLinks()
+	err := bc.findPageLinks()
 
-	err := bc.findResourceLinks()
+	if err != nil {
+		return errors.Wrap(err, "finding page links")
+	}
+
+	err = bc.findResourceLinks()
 	if err != nil {
 		return errors.Wrap(err, "finding resource links")
 	}
@@ -108,11 +112,11 @@ func (bc *BlockContent) findLinks() error {
 	return nil
 }
 
-func (bc *BlockContent) findPageLinks() {
+func (bc *BlockContent) findPageLinks() error {
 	pageLinkRe := regexp.MustCompile(`\[\[(.+?)\]\]`)
 
 	if bc.IsCodeBlock() {
-		return
+		return nil
 	}
 
 	for _, match := range pageLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
@@ -129,21 +133,26 @@ func (bc *BlockContent) findPageLinks() {
 		_, err := bc.AddLink(link)
 
 		if err != nil {
-			log.Errorf("Error adding link to page: %s", err)
+			return errors.Wrap(err, "adding page link")
 		}
 	}
+
+	return nil
 }
 
 func (bc *BlockContent) findResourceLinks() error {
-	resourceLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\(((../assets/)?.*?)\)`)
+	// a regular expression to match URLs, which may have embedded parentheses
+	// https://stackoverflow.com/a/3809435
+	resourceLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\((.*?)\)`)
 
 	for _, match := range resourceLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
-		raw, isEmbed, label, resourceUrl, isAsset := match[0], match[1], match[2], match[3], match[4]
+		raw, isEmbed, label, resourceUrl := match[0], match[1], match[2], match[3]
 		log.Debugf("Found resource link: ->%s<- label=%s uri=%s", raw, label, resourceUrl)
 
 		linkType := LinkTypeResource
+		isAsset := strings.HasPrefix(resourceUrl, "../assets/")
 
-		if isAsset != "" {
+		if isAsset == true {
 			linkType = LinkTypeAsset
 			resourceUrl = strings.TrimPrefix(resourceUrl, "..")
 		}

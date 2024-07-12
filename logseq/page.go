@@ -204,7 +204,12 @@ func findBlocks(page *Page, lines []PageLine) ([]*Block, error) {
 
 		if strings.HasPrefix(line.Content, branchBlockOpener) {
 			// Remember the current block.
-			block := NewBlock(page, currentBlockLines, currentIndent)
+			block, err := NewBlock(page, currentBlockLines, currentIndent)
+
+			if err != nil {
+				return nil, errors.Wrap(err, "creating new block")
+			}
+
 			blocks = append(blocks, block)
 			blockStack = placeBlock(block, blockStack)
 
@@ -238,7 +243,12 @@ func findBlocks(page *Page, lines []PageLine) ([]*Block, error) {
 
 	// Remember the last block.
 	if len(currentBlockLines) > 0 {
-		block := NewBlock(page, currentBlockLines, currentIndent)
+		block, err := NewBlock(page, currentBlockLines, currentIndent)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "creating block from remaining lines")
+		}
+
 		blocks = append(blocks, block)
 		placeBlock(block, blockStack)
 	}

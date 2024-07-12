@@ -20,8 +20,9 @@ func TestNewEmptyBlockContent(t *testing.T) {
 func TestNewBlockContent(t *testing.T) {
 	block := logseq.NewEmptyBlock()
 	rawSource := ""
-	content := logseq.NewBlockContent(block, rawSource)
+	content, err := logseq.NewBlockContent(block, rawSource)
 
+	assert.NoError(t, err)
 	assert.NotNil(t, content)
 	assert.Equal(t, block.ID, content.BlockID)
 }
@@ -118,4 +119,42 @@ func TestBlockContent_SetMarkdown(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, markdown, content.Markdown)
+}
+
+func TestBlockContent_SetMarkdown_WithResourceLinks(t *testing.T) {
+	linkTests := []struct {
+		SourceLink   string
+		ExpectedLink logseq.Link
+	}{
+		{"[label](https://example.com)", logseq.Link{
+			Raw:      "[label](https://example.com)",
+			LinkPath: "https://example.com",
+			Label:    "label",
+			LinkType: logseq.LinkTypeResource,
+			IsEmbed:  false,
+		},
+		},
+		{"[`Str.ords`](https://docs.raku.org/type/Str#(Cool)_routine_ords)", logseq.Link{
+			Raw:      "[`Str.ords`](https://docs.raku.org/type/Str#(Cool)_routine_ords)",
+			LinkPath: "https://docs.raku.org/type/Str#(Cool)_routine_ords",
+			Label:    "`Str.ords`",
+			LinkType: logseq.LinkTypeResource,
+			IsEmbed:  false,
+		},
+		},
+	}
+
+	for _, tt := range linkTests {
+		content := logseq.NewEmptyBlockContent()
+		markdown := tt.SourceLink
+		err := content.SetMarkdown(markdown)
+
+		assert.NoError(t, err)
+		assert.Equal(t, markdown, content.Markdown)
+		assert.NotEmpty(t, content.Links)
+
+		link, ok := content.FindLink(tt.ExpectedLink.LinkPath)
+		assert.True(t, ok)
+		assert.Equal(t, tt.ExpectedLink, link)
+	}
 }

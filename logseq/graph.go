@@ -53,7 +53,7 @@ func LoadGraph(graphDir string) *Graph {
 	pageDirs := []string{"pages", "journals"}
 
 	for _, pageDir := range pageDirs {
-		err = graph.loadPagesFromDir("pages")
+		err = graph.loadPagesFromDir(pageDir)
 
 		if err != nil {
 			log.Fatalf("Loading pages from %s: %v", pageDir, err)

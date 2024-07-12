@@ -5,6 +5,7 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"export-logseq/logseq"
 )
@@ -14,7 +15,10 @@ func TestParseSourceLines_WithProp(t *testing.T) {
 	propName := "id"
 	propValue := "123"
 	propString := propName + ":: " + propValue
-	block := logseq.NewBlock(&page, []string{propString}, 0)
+	block, err := logseq.NewBlock(&page, []string{propString}, 0)
+
+	require.NoError(t, err)
+
 	got, ok := block.Properties.Get("id")
 
 	assert.True(t, ok)
