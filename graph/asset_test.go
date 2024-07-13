@@ -1,11 +1,11 @@
-package logseq_test
+package graph_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"export-logseq/logseq"
+	"export-logseq/graph"
 )
 
 func AssetPath() string {
@@ -14,17 +14,17 @@ func AssetPath() string {
 
 func TestNewAsset(t *testing.T) {
 	pathInGraph := AssetPath()
-	asset := logseq.NewAsset(pathInGraph)
+	asset := graph.NewAsset(pathInGraph)
 
 	assert.Equal(t, pathInGraph, asset.PathInGraph)
 }
 
 func TestAsset_InContext(t *testing.T) {
 	pathInGraph := AssetPath()
-	asset := logseq.Asset{
+	asset := graph.Asset{
 		PathInGraph: pathInGraph,
 	}
-	g := *logseq.NewGraph()
+	g := *graph.NewGraph()
 	g.AddAsset(&asset)
 	path, err := asset.InContext(g)
 
@@ -33,12 +33,12 @@ func TestAsset_InContext(t *testing.T) {
 }
 
 func TestAsset_InContext_NotFound(t *testing.T) {
-	asset := logseq.Asset{
+	asset := graph.Asset{
 		PathInGraph: AssetPath(),
 	}
-	g := *logseq.NewGraph()
+	g := *graph.NewGraph()
 	_, err := asset.InContext(g)
 
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, logseq.AssetNotFoundError{AssetPath: asset.PathInGraph})
+	assert.ErrorIs(t, err, graph.AssetNotFoundError{AssetPath: asset.PathInGraph})
 }

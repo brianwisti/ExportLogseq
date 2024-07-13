@@ -1,4 +1,4 @@
-package logseq
+package graph
 
 type DisconnectedPageError struct {
 	PageName string

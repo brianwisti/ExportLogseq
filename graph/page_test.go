@@ -1,4 +1,4 @@
-package logseq_test
+package graph_test
 
 import (
 	"testing"
@@ -6,11 +6,11 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/assert"
 
-	"export-logseq/logseq"
+	"export-logseq/graph"
 )
 
 func TestPage_NewEmptyPage(t *testing.T) {
-	page := logseq.NewEmptyPage()
+	page := graph.NewEmptyPage()
 
 	assert.NotNil(t, page)
 	assert.Equal(t, "page", page.Kind)
@@ -19,7 +19,7 @@ func TestPage_NewEmptyPage(t *testing.T) {
 }
 
 func TestPage_Aliases_Empty(t *testing.T) {
-	page := logseq.NewEmptyPage()
+	page := graph.NewEmptyPage()
 	aliases := page.Aliases()
 
 	assert.NotNil(t, aliases)
@@ -37,7 +37,7 @@ func TestPage_Aliases_FromProperties(t *testing.T) {
 	}
 
 	for _, tt := range aliasesTests {
-		page := logseq.NewEmptyPage()
+		page := graph.NewEmptyPage()
 		page.Root.Properties.Set("alias", tt.PropValue)
 		aliases := page.Aliases()
 
@@ -55,7 +55,7 @@ func TestPage_IsPlaceholder(t *testing.T) {
 	}
 
 	for _, tt := range isPlaceholderTests {
-		page := logseq.NewEmptyPage()
+		page := graph.NewEmptyPage()
 		page.PathInGraph = tt.PathInGraph
 
 		assert.Equal(t, tt.want, page.IsPlaceholder())
@@ -63,7 +63,7 @@ func TestPage_IsPlaceholder(t *testing.T) {
 }
 
 func TestPage_IsPublic_Default(t *testing.T) {
-	page := logseq.NewEmptyPage()
+	page := graph.NewEmptyPage()
 
 	assert.False(t, page.IsPublic())
 }
@@ -78,7 +78,7 @@ func TestPage_IsPublic_FromRoot(t *testing.T) {
 		{"", false},
 	}
 
-	page := logseq.NewEmptyPage()
+	page := graph.NewEmptyPage()
 	for _, tt := range isPublicTests {
 		page.Root.Properties.Set("public", tt.PropValue)
 
@@ -89,17 +89,17 @@ func TestPage_IsPublic_FromRoot(t *testing.T) {
 }
 
 func TestPage_Links_Empty(t *testing.T) {
-	page := logseq.NewEmptyPage()
+	page := graph.NewEmptyPage()
 
 	assert.Empty(t, page.Links())
 }
 
 func TestPage_Links_FromRoot(t *testing.T) {
-	page := logseq.NewEmptyPage()
-	link := logseq.Link{
+	page := graph.NewEmptyPage()
+	link := graph.Link{
 		LinkPath: gofakeit.URL(),
 		Label:    gofakeit.Phrase(),
-		LinkType: logseq.LinkTypeResource,
+		LinkType: graph.LinkTypeResource,
 		IsEmbed:  false,
 	}
 	link, _ = page.Root.Content.AddLink(link)
@@ -109,7 +109,7 @@ func TestPage_Links_FromRoot(t *testing.T) {
 }
 
 func TestPage_Properties_Empty(t *testing.T) {
-	page := logseq.NewEmptyPage()
+	page := graph.NewEmptyPage()
 	pageProps := page.Properties()
 
 	assert.NotNil(t, pageProps)
@@ -117,7 +117,7 @@ func TestPage_Properties_Empty(t *testing.T) {
 }
 
 func TestPage_Properties_FromRoot(t *testing.T) {
-	page := logseq.NewEmptyPage()
+	page := graph.NewEmptyPage()
 	page.Name = "Test Page"
 	page.PathInSite = "test-page"
 	page.Root.Properties.Set("id", "123")
@@ -129,9 +129,9 @@ func TestPage_Properties_FromRoot(t *testing.T) {
 }
 
 func TestPage_SetRoot(t *testing.T) {
-	page := logseq.NewEmptyPage()
+	page := graph.NewEmptyPage()
 	oldRoot := page.Root
-	root := logseq.NewEmptyBlock()
+	root := graph.NewEmptyBlock()
 	assert.NotEqual(t, root, oldRoot)
 	page.SetRoot(root)
 
@@ -141,10 +141,10 @@ func TestPage_SetRoot(t *testing.T) {
 }
 
 func TestPage_SetRoot_WithChildren(t *testing.T) {
-	page := logseq.NewEmptyPage()
-	root := logseq.NewEmptyBlock()
-	child := logseq.NewEmptyBlock()
-	root.Children = []*logseq.Block{child}
+	page := graph.NewEmptyPage()
+	root := graph.NewEmptyBlock()
+	child := graph.NewEmptyBlock()
+	root.Children = []*graph.Block{child}
 	page.SetRoot(root)
 
 	assert.Equal(t, root, page.Root)

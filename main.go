@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"export-logseq/logseq"
+	"export-logseq/graph"
 )
 
 type SelectedPages string
@@ -28,7 +28,7 @@ type ExportCmd struct {
 }
 
 func (cmd *ExportCmd) Run() error {
-	graph := logseq.LoadGraph(cmd.GraphDir)
+	graph := graph.LoadGraph(cmd.GraphDir)
 
 	if cmd.SelectedPages == PublicPages {
 		graph = graph.PublicGraph()
@@ -45,7 +45,7 @@ type CLI struct {
 	Export ExportCmd `cmd:"" help:"Export a Logseq graph to SSG content folder."`
 }
 
-func exportGraph(graph *logseq.Graph, siteDir string) error {
+func exportGraph(graph *graph.Graph, siteDir string) error {
 	log.Infof("Exporting from %s to %s", graph.GraphDir, siteDir)
 
 	exportDir := filepath.Join(siteDir, "assets", "exported")

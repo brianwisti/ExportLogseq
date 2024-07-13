@@ -1,12 +1,12 @@
-package logseq
+package graph
 
 import (
 	"bytes"
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 )
@@ -265,14 +265,14 @@ func (g *Graph) loadAssets() error {
 		err = g.AddAsset(&asset)
 
 		if err != nil {
-			return errors.Wrap(err, "adding asset " + assetFile)
+			return errors.Wrap(err, "adding asset "+assetFile)
 		}
 	}
 
 	return nil
 }
 
-func (g* Graph) loadPagesFromDir(subdir string) error {
+func (g *Graph) loadPagesFromDir(subdir string) error {
 	pagesDir := filepath.Join(g.GraphDir, subdir)
 	log.Infof("Loading pages from %s", pagesDir)
 	pageFiles, err := filepath.Glob(filepath.Join(pagesDir, "*.md"))
@@ -285,12 +285,12 @@ func (g* Graph) loadPagesFromDir(subdir string) error {
 		page, err := LoadPage(pageFile, pagesDir)
 
 		if err != nil {
-			return errors.Wrap(err, "loading page " + pageFile)
+			return errors.Wrap(err, "loading page "+pageFile)
 		}
 
 		err = g.AddPage(&page)
 		if err != nil {
-			return errors.Wrap(err, "adding loaded page " + pageFile)
+			return errors.Wrap(err, "adding loaded page "+pageFile)
 		}
 	}
 

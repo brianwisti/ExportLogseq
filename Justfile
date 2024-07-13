@@ -1,7 +1,6 @@
-run:
-	go run . export
+
 test:
-	go test export-logseq/logseq
+	go test export-logseq/graph
 
 lint:
-	golangci-lint run ./. ./logseq
+	golangci-lint run ./. ./graph

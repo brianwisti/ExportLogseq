@@ -1,19 +1,19 @@
-package logseq_test
+package graph_test
 
 import (
 	"github.com/brianvoe/gofakeit/v7"
 
-	"export-logseq/logseq"
+	"export-logseq/graph"
 )
 
-func BlockContent() *logseq.BlockContent {
+func BlockContent() *graph.BlockContent {
 	page := Page()
 
 	return page.Root.Content
 }
 
-func Page() logseq.Page {
-	page := logseq.NewEmptyPage()
+func Page() graph.Page {
+	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
 	page.PathInGraph = gofakeit.Word()

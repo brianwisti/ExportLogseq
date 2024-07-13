@@ -1,4 +1,4 @@
-package logseq_test
+package graph_test
 
 import (
 	"strings"
@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"export-logseq/logseq"
+	"export-logseq/graph"
 )
 
 func TestGraph_NewGraph(t *testing.T) {
-	graph := logseq.NewGraph()
+	graph := graph.NewGraph()
 
 	assert.NotNil(t, graph)
 	assert.Empty(t, graph.Pages)
@@ -20,262 +20,262 @@ func TestGraph_NewGraph(t *testing.T) {
 }
 
 func TestGraph_AddAsset(t *testing.T) {
-	graph := logseq.NewGraph()
-	asset := logseq.NewAsset("assets/test.jpg")
-	err := graph.AddAsset(&asset)
+	g := graph.NewGraph()
+	asset := graph.NewAsset("assets/test.jpg")
+	err := g.AddAsset(&asset)
 
 	assert.NoError(t, err)
 
 	assetKey := strings.ToLower(asset.PathInGraph)
-	addedAsset, ok := graph.Assets[assetKey]
+	addedAsset, ok := g.Assets[assetKey]
 
 	assert.True(t, ok)
 	assert.Equal(t, &asset, addedAsset)
 }
 
 func TestGraph_AddAsset_WithExistingAsset(t *testing.T) {
-	graph := logseq.NewGraph()
-	asset := logseq.NewAsset("assets/test.jpg")
-	_ = graph.AddAsset(&asset)
-	err := graph.AddAsset(&asset)
+	g := graph.NewGraph()
+	asset := graph.NewAsset("assets/test.jpg")
+	_ = g.AddAsset(&asset)
+	err := g.AddAsset(&asset)
 
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, logseq.AssetExistsError{AssetPath: asset.PathInGraph})
+	assert.ErrorIs(t, err, graph.AssetExistsError{AssetPath: asset.PathInGraph})
 }
 
 func TestGraph_AddPage(t *testing.T) {
-	graph := logseq.NewGraph()
-	page := logseq.NewEmptyPage()
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
-	err := graph.AddPage(&page)
+	err := g.AddPage(&page)
 	assert.NoError(t, err)
 
 	pageKey := strings.ToLower(page.Name)
-	addedPage, ok := graph.Pages[pageKey]
+	addedPage, ok := g.Pages[pageKey]
 
 	assert.True(t, ok)
 	assert.Equal(t, &page, addedPage)
 }
 
 func TestGraph_AddPage_WithExistingPage(t *testing.T) {
-	graph := logseq.NewGraph()
-	page := logseq.NewEmptyPage()
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
-	_ = graph.AddPage(&page)
-	err := graph.AddPage(&page)
+	_ = g.AddPage(&page)
+	err := g.AddPage(&page)
 
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, logseq.PageExistsError{PageName: page.Name})
+	assert.ErrorIs(t, err, graph.PageExistsError{PageName: page.Name})
 }
 
 func TestGraph_FindAsset(t *testing.T) {
-	graph := logseq.NewGraph()
-	asset := logseq.NewAsset("assets/test.jpg")
-	_ = graph.AddAsset(&asset)
-	foundAsset, ok := graph.FindAsset("assets/test.jpg")
+	g := graph.NewGraph()
+	asset := graph.NewAsset("assets/test.jpg")
+	_ = g.AddAsset(&asset)
+	foundAsset, ok := g.FindAsset("assets/test.jpg")
 
 	assert.True(t, ok)
 	assert.Equal(t, &asset, foundAsset)
 }
 
 func TestGraph_FindAsset_CaseInsensitive(t *testing.T) {
-	graph := logseq.NewGraph()
+	g := graph.NewGraph()
 	assetName := "assets/test.jpg"
-	asset := logseq.NewAsset(assetName)
-	_ = graph.AddAsset(&asset)
-	foundAsset, ok := graph.FindAsset(strings.ToUpper(assetName))
+	asset := graph.NewAsset(assetName)
+	_ = g.AddAsset(&asset)
+	foundAsset, ok := g.FindAsset(strings.ToUpper(assetName))
 
 	assert.False(t, ok)
 	assert.Nil(t, foundAsset)
 }
 
 func TestGraph_FindAsset_NotFound(t *testing.T) {
-	graph := logseq.NewGraph()
+	graph := graph.NewGraph()
 	_, ok := graph.FindAsset("assets/test.jpg")
 
 	assert.False(t, ok)
 }
 
 func TestGraph_FindLinksToPage(t *testing.T) {
-	graph := logseq.NewGraph()
+	g := graph.NewGraph()
 	fromPage, toPage := Page(), Page()
-	err := graph.AddPage(&fromPage)
+	err := g.AddPage(&fromPage)
 	require.NoError(t, err)
 
-	err = graph.AddPage(&toPage)
+	err = g.AddPage(&toPage)
 	require.NoError(t, err)
 
-	link := logseq.Link{
+	link := graph.Link{
 		LinkPath: toPage.Name,
 		Label:    toPage.Name,
-		LinkType: logseq.LinkTypePage,
+		LinkType: graph.LinkTypePage,
 		IsEmbed:  false,
 	}
 
 	link, err = fromPage.Root.Content.AddLink(link)
 	require.NoError(t, err)
 
-	links := graph.FindLinksToPage(&toPage)
+	links := g.FindLinksToPage(&toPage)
 	assert.NotEmpty(t, links)
 	assert.Contains(t, links, link)
 }
 
 func TestGraph_FindPage(t *testing.T) {
-	graph := logseq.NewGraph()
-	page := logseq.NewEmptyPage()
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
-	_ = graph.AddPage(&page)
-	foundPage, err := graph.FindPage(page.Name)
+	_ = g.AddPage(&page)
+	foundPage, err := g.FindPage(page.Name)
 
 	assert.NoError(t, err)
 	assert.Equal(t, &page, foundPage)
 }
 
 func TestGraph_FindPage_CaseInsensitive(t *testing.T) {
-	graph := logseq.NewGraph()
-	page := logseq.NewEmptyPage()
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
-	_ = graph.AddPage(&page)
-	foundPage, err := graph.FindPage(page.Name)
+	_ = g.AddPage(&page)
+	foundPage, err := g.FindPage(page.Name)
 
 	assert.NoError(t, err)
 	assert.Equal(t, &page, foundPage)
 }
 
 func TestGraph_FindPage_NotFound(t *testing.T) {
-	graph := logseq.NewGraph()
-	_, err := graph.FindPage("Test Page")
+	g := graph.NewGraph()
+	_, err := g.FindPage("Test Page")
 
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, logseq.PageNotFoundError{PageName: "Test Page"})
+	assert.ErrorIs(t, err, graph.PageNotFoundError{PageName: "Test Page"})
 }
 
 func TestGraph_FindPage_WithAlias(t *testing.T) {
-	graph := logseq.NewGraph()
-	page := logseq.NewEmptyPage()
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
 	page.Root.Properties.Set("alias", "alias")
-	_ = graph.AddPage(&page)
-	foundPage, err := graph.FindPage("alias")
+	_ = g.AddPage(&page)
+	foundPage, err := g.FindPage("alias")
 
 	assert.NoError(t, err)
 	assert.Equal(t, &page, foundPage)
 }
 
 func TestGraph_Links(t *testing.T) {
-	graph := logseq.NewGraph()
-	page := logseq.NewEmptyPage()
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
-	link := logseq.Link{
+	link := graph.Link{
 		LinkPath: gofakeit.URL(),
 		Label:    gofakeit.Phrase(),
-		LinkType: logseq.LinkTypeResource,
+		LinkType: graph.LinkTypeResource,
 		IsEmbed:  false,
 	}
 	link, _ = page.Root.Content.AddLink(link)
-	graph.AddPage(&page)
-	links := graph.Links()
+	g.AddPage(&page)
+	links := g.Links()
 
 	assert.NotEmpty(t, links)
 	assert.Contains(t, links, link)
 }
 
 func TestGraph_Links_Empty(t *testing.T) {
-	graph := logseq.NewGraph()
+	graph := graph.NewGraph()
 	links := graph.Links()
 
 	assert.Empty(t, links)
 }
 
 func TestGraph_AssetLinks(t *testing.T) {
-	graph := logseq.NewGraph()
+	g := graph.NewGraph()
 	page := Page()
-	graph.AddPage(&page)
+	g.AddPage(&page)
 
-	asset := logseq.NewAsset("assets/test.jpg")
-	_ = graph.AddAsset(&asset)
-	link := logseq.Link{
+	asset := graph.NewAsset("assets/test.jpg")
+	_ = g.AddAsset(&asset)
+	link := graph.Link{
 		LinkPath: asset.PathInGraph,
 		Label:    asset.PathInGraph,
-		LinkType: logseq.LinkTypeAsset,
+		LinkType: graph.LinkTypeAsset,
 		IsEmbed:  false,
 	}
 	link, _ = page.Root.Content.AddLink(link)
-	links := graph.AssetLinks()
+	links := g.AssetLinks()
 
 	assert.NotEmpty(t, links)
 	assert.Contains(t, links, link)
 }
 
 func TestGraph_PageLinks_Empty(t *testing.T) {
-	graph := logseq.NewGraph()
+	graph := graph.NewGraph()
 	links := graph.PageLinks()
 
 	assert.Empty(t, links)
 }
 
 func TestGraph_PageLinks(t *testing.T) {
-	graph := logseq.NewGraph()
-	page := logseq.NewEmptyPage()
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
 
-	graph.AddPage(&page)
+	g.AddPage(&page)
 
 	pageName, label := PageName(), LinkLabel()
-	link := logseq.Link{
+	link := graph.Link{
 		LinkPath: pageName,
 		Label:    label,
-		LinkType: logseq.LinkTypePage,
+		LinkType: graph.LinkTypePage,
 		IsEmbed:  false,
 	}
 
 	link, _ = page.Root.Content.AddLink(link)
 
-	links := graph.PageLinks()
+	links := g.PageLinks()
 	assert.NotEmpty(t, links)
 	assert.Contains(t, links, link)
 }
 
 func TestGraph_ResourceLinks(t *testing.T) {
-	graph := logseq.NewGraph()
-	page := logseq.NewEmptyPage()
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	page.PathInSite = gofakeit.Word()
 	url, label := gofakeit.URL(), gofakeit.Phrase()
-	link := logseq.Link{
+	link := graph.Link{
 		LinkPath: url,
 		Label:    label,
-		LinkType: logseq.LinkTypeResource,
+		LinkType: graph.LinkTypeResource,
 	}
 	link, _ = page.Root.Content.AddLink(link)
-	graph.AddPage(&page)
-	links := graph.ResourceLinks()
+	g.AddPage(&page)
+	links := g.ResourceLinks()
 
 	assert.NotEmpty(t, links)
 	assert.Contains(t, links, link)
 }
 
 func TestGraph_PublicGraph(t *testing.T) {
-	graph := logseq.NewGraph()
+	g := graph.NewGraph()
 
-	publicPage := logseq.NewEmptyPage()
+	publicPage := graph.NewEmptyPage()
 	publicPage.Name = gofakeit.Word()
 	publicPage.PathInSite = gofakeit.Word()
 	publicPage.Root.Properties.Set("public", "true")
-	_ = graph.AddPage(&publicPage)
+	_ = g.AddPage(&publicPage)
 
-	privatePage := logseq.NewEmptyPage()
+	privatePage := graph.NewEmptyPage()
 	privatePage.Name = "Private Page"
 	privatePage.PathInSite = "private-page"
 	privatePage.Root.Properties.Set("public", "false")
-	_ = graph.AddPage(&privatePage)
+	_ = g.AddPage(&privatePage)
 
-	publicGraph := graph.PublicGraph()
+	publicGraph := g.PublicGraph()
 	foundPage, err := publicGraph.FindPage(publicPage.Name)
 
 	assert.NoError(t, err)

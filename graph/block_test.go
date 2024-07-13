@@ -1,4 +1,4 @@
-package logseq_test
+package graph_test
 
 import (
 	"testing"
@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"export-logseq/logseq"
+	"export-logseq/graph"
 )
 
 func TestParseSourceLines_WithProp(t *testing.T) {
-	page := logseq.NewEmptyPage()
+	page := graph.NewEmptyPage()
 	propName := "id"
 	propValue := "123"
 	propString := propName + ":: " + propValue
-	block, err := logseq.NewBlock(&page, []string{propString}, 0)
+	block, err := graph.NewBlock(&page, []string{propString}, 0)
 
 	require.NoError(t, err)
 
@@ -26,8 +26,8 @@ func TestParseSourceLines_WithProp(t *testing.T) {
 }
 
 func TestBlock_AddChild(t *testing.T) {
-	block := logseq.NewEmptyBlock()
-	child := logseq.NewEmptyBlock()
+	block := graph.NewEmptyBlock()
+	child := graph.NewEmptyBlock()
 	block.AddChild(child)
 
 	assert.Contains(t, block.Children, child)
@@ -35,7 +35,7 @@ func TestBlock_AddChild(t *testing.T) {
 }
 
 func TestBlock_IsPublic_Default(t *testing.T) {
-	block := logseq.NewEmptyBlock()
+	block := graph.NewEmptyBlock()
 
 	assert.False(t, block.IsPublic())
 }
@@ -50,7 +50,7 @@ func TestBlock_IsPublic_FromProp(t *testing.T) {
 		{"", false},
 	}
 
-	block := logseq.NewEmptyBlock()
+	block := graph.NewEmptyBlock()
 	for _, tt := range isPublicTests {
 		block.Properties.Set("public", tt.PropValue)
 
@@ -71,8 +71,8 @@ func TestBlock_IsPublic_Cascading(t *testing.T) {
 	}
 
 	for _, tt := range isPublicTests {
-		block := logseq.NewEmptyBlock()
-		child := logseq.NewEmptyBlock()
+		block := graph.NewEmptyBlock()
+		child := graph.NewEmptyBlock()
 
 		block.Properties.Set("public", tt.PropValue)
 		block.AddChild(child)
@@ -82,8 +82,8 @@ func TestBlock_IsPublic_Cascading(t *testing.T) {
 }
 
 func TestBlock_IsPublic_OverridesParent(t *testing.T) {
-	block := logseq.NewEmptyBlock()
-	child := logseq.NewEmptyBlock()
+	block := graph.NewEmptyBlock()
+	child := graph.NewEmptyBlock()
 
 	block.Properties.Set("public", "false")
 	block.AddChild(child)
@@ -93,11 +93,11 @@ func TestBlock_IsPublic_OverridesParent(t *testing.T) {
 }
 
 func TestBlock_Links(t *testing.T) {
-	block := logseq.NewEmptyBlock()
-	link := logseq.Link{
+	block := graph.NewEmptyBlock()
+	link := graph.Link{
 		LinkPath: gofakeit.URL(),
 		Label:    gofakeit.Phrase(),
-		LinkType: logseq.LinkTypeResource,
+		LinkType: graph.LinkTypeResource,
 		IsEmbed:  false,
 	}
 	link, _ = block.Content.AddLink(link)
@@ -107,7 +107,7 @@ func TestBlock_Links(t *testing.T) {
 }
 
 func TestBlock_Links_Empty(t *testing.T) {
-	block := logseq.NewEmptyBlock()
+	block := graph.NewEmptyBlock()
 	links := block.Links()
 
 	assert.NotNil(t, links)

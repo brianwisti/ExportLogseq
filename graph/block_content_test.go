@@ -1,4 +1,4 @@
-package logseq_test
+package graph_test
 
 import (
 	"testing"
@@ -6,11 +6,11 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/assert"
 
-	"export-logseq/logseq"
+	"export-logseq/graph"
 )
 
 func TestNewEmptyBlockContent(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
+	content := graph.NewEmptyBlockContent()
 
 	assert.NotNil(t, content)
 	assert.Empty(t, content.BlockID)
@@ -18,9 +18,9 @@ func TestNewEmptyBlockContent(t *testing.T) {
 }
 
 func TestNewBlockContent(t *testing.T) {
-	block := logseq.NewEmptyBlock()
+	block := graph.NewEmptyBlock()
 	rawSource := ""
-	content, err := logseq.NewBlockContent(block, rawSource)
+	content, err := graph.NewBlockContent(block, rawSource)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, content)
@@ -29,17 +29,17 @@ func TestNewBlockContent(t *testing.T) {
 
 func TestBlockContent_AddLink(t *testing.T) {
 	addLinkTests := []struct {
-		LinkType logseq.LinkType
+		LinkType graph.LinkType
 		linkPath string
 		Label    string
 		IsEmbed  bool
 	}{
-		{logseq.LinkTypeResource, gofakeit.URL(), gofakeit.Phrase(), false},
+		{graph.LinkTypeResource, gofakeit.URL(), gofakeit.Phrase(), false},
 	}
 
 	for _, tt := range addLinkTests {
-		content := logseq.NewEmptyBlockContent()
-		link := logseq.Link{
+		content := graph.NewEmptyBlockContent()
+		link := graph.Link{
 			LinkPath: tt.linkPath,
 			Label:    tt.Label,
 			LinkType: tt.LinkType,
@@ -60,11 +60,11 @@ func TestBlockContent_AddLink(t *testing.T) {
 }
 
 func TestBlockContent_AddLink_Duplicate(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
-	link := logseq.Link{
+	content := graph.NewEmptyBlockContent()
+	link := graph.Link{
 		LinkPath: gofakeit.URL(),
 		Label:    gofakeit.Phrase(),
-		LinkType: logseq.LinkTypeResource,
+		LinkType: graph.LinkTypeResource,
 		IsEmbed:  false,
 	}
 	content.AddLink(link)
@@ -77,13 +77,13 @@ func TestBlockContent_AddLink_Duplicate(t *testing.T) {
 }
 
 func TestBlockContent_FindLink(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
+	content := graph.NewEmptyBlockContent()
 	linkPath := gofakeit.URL()
-	link := logseq.Link{
+	link := graph.Link{
 		LinksFrom: content.BlockID,
 		LinkPath:  linkPath,
 		Label:     gofakeit.Phrase(),
-		LinkType:  logseq.LinkTypeResource,
+		LinkType:  graph.LinkTypeResource,
 		IsEmbed:   false,
 	}
 	content.Links[linkPath] = link
@@ -95,7 +95,7 @@ func TestBlockContent_FindLink(t *testing.T) {
 }
 
 func TestBlockContent_FindLink_NotFound(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
+	content := graph.NewEmptyBlockContent()
 	linkPath := gofakeit.URL()
 	foundLink, ok := content.FindLink(linkPath)
 
@@ -105,14 +105,14 @@ func TestBlockContent_FindLink_NotFound(t *testing.T) {
 
 func TestBlockContent_IsCodeBlock(t *testing.T) {
 	codeBlockMarkdown := "```\ncode\n```"
-	content := logseq.BlockContent{
+	content := graph.BlockContent{
 		Markdown: codeBlockMarkdown,
 	}
 	assert.True(t, content.IsCodeBlock())
 }
 
 func TestBlockContent_SetMarkdown(t *testing.T) {
-	content := logseq.NewEmptyBlockContent()
+	content := graph.NewEmptyBlockContent()
 	markdown := gofakeit.Sentence(5)
 	err := content.SetMarkdown(markdown)
 

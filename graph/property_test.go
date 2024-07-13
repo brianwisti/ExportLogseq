@@ -1,11 +1,11 @@
-package logseq_test
+package graph_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"export-logseq/logseq"
+	"export-logseq/graph"
 )
 
 func TestProperty_String(t *testing.T) {
@@ -19,7 +19,7 @@ func TestProperty_String(t *testing.T) {
 	}
 
 	for _, tt := range stringTests {
-		prop := logseq.Property{
+		prop := graph.Property{
 			Name:  "test",
 			Value: tt.value,
 		}
@@ -39,7 +39,7 @@ func TestProperty_Bool(t *testing.T) {
 	}
 
 	for _, tt := range boolTests {
-		prop := logseq.Property{
+		prop := graph.Property{
 			Name:  "test",
 			Value: tt.value,
 		}
@@ -49,7 +49,7 @@ func TestProperty_Bool(t *testing.T) {
 }
 
 func TestProperty_List(t *testing.T) {
-	prop := logseq.Property{
+	prop := graph.Property{
 		Name:  "test",
 		Value: "a, b, c",
 	}
@@ -69,7 +69,7 @@ func TestProperty_IsPageLink(t *testing.T) {
 	}
 
 	for _, tt := range pageLinkTests {
-		prop := logseq.Property{
+		prop := graph.Property{
 			Name:  "test",
 			Value: tt.value,
 		}
@@ -79,7 +79,7 @@ func TestProperty_IsPageLink(t *testing.T) {
 }
 
 func TestPropertyMap_Get(t *testing.T) {
-	pm := logseq.NewPropertyMap()
+	pm := graph.NewPropertyMap()
 	propName := "test"
 	propValue := "value"
 	pm.Set(propName, propValue)
@@ -90,14 +90,14 @@ func TestPropertyMap_Get(t *testing.T) {
 }
 
 func TestPropertyMap_Get_NotFound(t *testing.T) {
-	pm := logseq.NewPropertyMap()
+	pm := graph.NewPropertyMap()
 	prop, ok := pm.Get("test")
 	assert.False(t, ok)
 	assert.Empty(t, prop)
 }
 
 func TestPropertyMap_Set(t *testing.T) {
-	pm := logseq.NewPropertyMap()
+	pm := graph.NewPropertyMap()
 	propName := "test"
 	propValue := "value"
 	pm.Set(propName, propValue)

@@ -1,4 +1,4 @@
-package logseq
+package graph
 
 type LinkType string
 

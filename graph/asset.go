@@ -1,4 +1,4 @@
-package logseq
+package graph
 
 // Asset represents a non-note resource in a Logseq graph.
 type Asset struct {

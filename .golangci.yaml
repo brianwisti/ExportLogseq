@@ -17,7 +17,7 @@ linters-settings:
       main:
         allow:
           - $gostd
-          - export-logseq/logseq
+          - export-logseq/graph
           - github.com/brianvoe/gofakeit/v7
           - github.com/google/uuid
           - github.com/gosimple/slug

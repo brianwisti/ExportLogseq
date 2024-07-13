@@ -1,57 +1,57 @@
-package logseq_test
+package graph_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"export-logseq/logseq"
+	"export-logseq/graph"
 )
 
 func TestLink_IsBlock(t *testing.T) {
-	link := logseq.Link{
+	link := graph.Link{
 		LinkPath: "test-block",
-		LinkType: logseq.LinkTypeBlock,
+		LinkType: graph.LinkTypeBlock,
 	}
 
 	assert.True(t, link.IsBlock())
 
-	link.LinkType = logseq.LinkTypePage
+	link.LinkType = graph.LinkTypePage
 	assert.False(t, link.IsBlock())
 }
 
 func TestLink_IsAsset(t *testing.T) {
-	link := logseq.Link{
+	link := graph.Link{
 		LinkPath: "test-asset",
-		LinkType: logseq.LinkTypeAsset,
+		LinkType: graph.LinkTypeAsset,
 	}
 
 	assert.True(t, link.IsAsset())
 
-	link.LinkType = logseq.LinkTypePage
+	link.LinkType = graph.LinkTypePage
 	assert.False(t, link.IsAsset())
 }
 
 func TestLink_IsPage(t *testing.T) {
-	link := logseq.Link{
+	link := graph.Link{
 		LinkPath: "test-page",
-		LinkType: logseq.LinkTypePage,
+		LinkType: graph.LinkTypePage,
 	}
 
 	assert.True(t, link.IsPage())
 
-	link.LinkType = logseq.LinkTypeAsset
+	link.LinkType = graph.LinkTypeAsset
 	assert.False(t, link.IsPage())
 }
 
 func TestLink_IsResource(t *testing.T) {
-	link := logseq.Link{
+	link := graph.Link{
 		LinkPath: "test-resource",
-		LinkType: logseq.LinkTypeResource,
+		LinkType: graph.LinkTypeResource,
 	}
 
 	assert.True(t, link.IsResource())
 
-	link.LinkType = logseq.LinkTypeAsset
+	link.LinkType = graph.LinkTypeAsset
 	assert.False(t, link.IsResource())
 }
