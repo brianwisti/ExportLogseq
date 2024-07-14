@@ -1,9 +1,9 @@
-package graph
+package logseq
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"olympos.io/encoding/edn"
 )
@@ -14,22 +14,29 @@ type LogseqConfig struct {
 	PreferredFormat edn.Keyword `edn:"preferred-format"`
 }
 
-func LoadConfig(configFile string) (LogseqConfig, error) {
+func CheckConfig(configFile string) error {
 	log.Info("Loading config file:", configFile)
 
 	logseqConfigBytes, err := os.ReadFile(configFile)
 	if err != nil {
-		return LogseqConfig{}, fmt.Errorf("reading config file: %v", err)
+		return errors.Wrap(err, "reading config file")
 	}
 
 	var f LogseqConfig
 	ednErr := edn.Unmarshal(logseqConfigBytes, &f)
 
 	if ednErr != nil {
-		log.Fatalf("Error unmarshalling EDN: %v", ednErr)
-
-		return LogseqConfig{}, fmt.Errorf("unmarshalling EDN: %v", ednErr)
+		return errors.Wrap(ednErr, "unmarshalling EDN")
 	}
 
-	return f, nil
+	// We're specifically catering to my graph first.
+	if f.FileNameFormat != "triple-lowbar" {
+		return errors.New("unsupported file name format" + f.FileNameFormat.String())
+	}
+
+	if f.PreferredFormat != "markdown" {
+		return errors.New("unsupported preferred format" + f.PreferredFormat.String())
+	}
+
+	return nil
 }

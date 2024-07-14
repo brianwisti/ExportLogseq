@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"export-logseq/graph"
+	"export-logseq/logseq"
 )
 
 type SelectedPages string
@@ -28,13 +29,17 @@ type ExportCmd struct {
 }
 
 func (cmd *ExportCmd) Run() error {
-	graph := graph.LoadGraph(cmd.GraphDir)
+	graph, err := logseq.LoadGraph(cmd.GraphDir)
+
+	if err != nil {
+		return errors.Wrap(err, "loading graph")
+	}
 
 	if cmd.SelectedPages == PublicPages {
 		graph = graph.PublicGraph()
 	}
 
-	if err := exportGraph(graph, cmd.SiteDir); err != nil {
+	if err := exportGraph(&graph, cmd.SiteDir); err != nil {
 		return errors.Wrap(err, "exporting graph")
 	}
 

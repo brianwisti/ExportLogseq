@@ -2,10 +2,8 @@ package graph
 
 import (
 	"bytes"
-	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -17,52 +15,11 @@ type Graph struct {
 	Assets   map[string]*Asset `json:"assets"`
 }
 
-func NewGraph() *Graph {
-	return &Graph{
+func NewGraph() Graph {
+	return Graph{
 		Pages:  map[string]*Page{},
 		Assets: map[string]*Asset{},
 	}
-}
-
-func LoadGraph(graphDir string) *Graph {
-	graph := NewGraph()
-	graph.GraphDir = graphDir
-
-	configFile := filepath.Join(graphDir, "logseq", "config.edn")
-	logseqConfig, err := LoadConfig(configFile)
-
-	if err != nil {
-		log.Fatal("loading Logseq config:", err)
-	}
-
-	// We're specifically catering to my graph first.
-	if logseqConfig.FileNameFormat != "triple-lowbar" {
-		log.Fatal("Unsupported file name format:", logseqConfig.FileNameFormat)
-	}
-
-	if logseqConfig.PreferredFormat != "markdown" {
-		log.Fatal("Unsupported preferred format:", logseqConfig.PreferredFormat)
-	}
-
-	err = graph.loadAssets()
-
-	if err != nil {
-		log.Fatal("Loading Assets: ", err)
-	}
-
-	pageDirs := []string{"pages", "journals"}
-
-	for _, pageDir := range pageDirs {
-		err = graph.loadPagesFromDir(pageDir)
-
-		if err != nil {
-			log.Fatalf("Loading pages from %s: %v", pageDir, err)
-		}
-	}
-
-	graph.PutPagesInContext()
-
-	return graph
 }
 
 // AddAsset adds an asset to the graph.
@@ -178,7 +135,7 @@ func (g *Graph) PageLinks() []Link {
 }
 
 // PublicGraph returns a copy of the graph with only public pages.
-func (g *Graph) PublicGraph() *Graph {
+func (g *Graph) PublicGraph() Graph {
 	publicGraph := NewGraph()
 	publicGraph.GraphDir = g.GraphDir
 
@@ -243,58 +200,6 @@ func (g *Graph) ResourceLinks() []Link {
 	log.Debug("Resource links found: ", len(links))
 
 	return links
-}
-
-func (g *Graph) loadAssets() error {
-	assetsDir := filepath.Join(g.GraphDir, "assets")
-	log.Info("Assets directory:", assetsDir)
-	assetFiles, err := filepath.Glob(filepath.Join(assetsDir, "*.*"))
-
-	if err != nil {
-		return errors.Wrap(err, "listing asset files")
-	}
-
-	for _, assetFile := range assetFiles {
-		relPath, err := filepath.Rel(assetsDir, assetFile)
-		if err != nil {
-			return errors.Wrap(err, "calculating relative path for asset")
-		}
-
-		asset := NewAsset("/assets/" + relPath)
-		asset.PathInSite = "/img/" + relPath
-		err = g.AddAsset(&asset)
-
-		if err != nil {
-			return errors.Wrap(err, "adding asset "+assetFile)
-		}
-	}
-
-	return nil
-}
-
-func (g *Graph) loadPagesFromDir(subdir string) error {
-	pagesDir := filepath.Join(g.GraphDir, subdir)
-	log.Infof("Loading pages from %s", pagesDir)
-	pageFiles, err := filepath.Glob(filepath.Join(pagesDir, "*.md"))
-
-	if err != nil {
-		return errors.Wrap(err, "listing page files")
-	}
-
-	for _, pageFile := range pageFiles {
-		page, err := LoadPage(pageFile, pagesDir)
-
-		if err != nil {
-			return errors.Wrap(err, "loading page "+pageFile)
-		}
-
-		err = g.AddPage(&page)
-		if err != nil {
-			return errors.Wrap(err, "adding loaded page "+pageFile)
-		}
-	}
-
-	return nil
 }
 
 func (g *Graph) prepPageForSite(page *Page) {

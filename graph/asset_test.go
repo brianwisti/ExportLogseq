@@ -24,7 +24,7 @@ func TestAsset_InContext(t *testing.T) {
 	asset := graph.Asset{
 		PathInGraph: pathInGraph,
 	}
-	g := *graph.NewGraph()
+	g := graph.NewGraph()
 	g.AddAsset(&asset)
 	path, err := asset.InContext(g)
 
@@ -36,7 +36,7 @@ func TestAsset_InContext_NotFound(t *testing.T) {
 	asset := graph.Asset{
 		PathInGraph: AssetPath(),
 	}
-	g := *graph.NewGraph()
+	g := graph.NewGraph()
 	_, err := asset.InContext(g)
 
 	assert.Error(t, err)

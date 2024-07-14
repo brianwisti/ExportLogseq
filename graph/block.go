@@ -114,35 +114,3 @@ func (b *Block) Links() []Link {
 func (b *Block) String() string {
 	return fmt.Sprintf("<Block: %s#%s>", b.PageName, b.ID)
 }
-
-type BlockStack struct {
-	Blocks []*Block
-}
-
-func (bs *BlockStack) Push(b *Block) {
-	bs.Blocks = append(bs.Blocks, b)
-}
-
-func (bs *BlockStack) Pop() *Block {
-	if len(bs.Blocks) == 0 {
-		return nil
-	}
-
-	lastIndex := len(bs.Blocks) - 1
-	top := bs.Blocks[lastIndex]
-	bs.Blocks = bs.Blocks[:lastIndex]
-
-	return top
-}
-
-func (bs *BlockStack) Top() *Block {
-	if len(bs.Blocks) == 0 {
-		return nil
-	}
-
-	return bs.Blocks[len(bs.Blocks)-1]
-}
-
-func (bs *BlockStack) IsEmpty() bool {
-	return len(bs.Blocks) == 0
-}
