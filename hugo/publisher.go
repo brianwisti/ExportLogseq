@@ -26,13 +26,15 @@ func ExportGraph(graph graph.Graph, siteDir string) error {
 	exporter := Exporter{
 		Graph:    graph,
 		SiteDir:  siteDir,
-		AssetDir: filepath.Join(siteDir, "static"),
+		AssetDir: filepath.Join(siteDir, "static", "img"),
 	}
 
 	if err := exporter.ExportGraphJSON(); err != nil {
 		return errors.Wrap(err, "exporting graph JSON")
 	}
 
+	log.Infof("graph has %d total links", len(graph.Links()))
+	log.Infof("Exporting assets from %d asset links", len(graph.AssetLinks()))
 	if err := exporter.ExportAssets(); err != nil {
 		return errors.Wrap(err, "exporting assets")
 	}
@@ -89,18 +91,18 @@ func (e *Exporter) ExportGraphJSON() error {
 }
 
 func (e *Exporter) exportLinkedAsset(link graph.Link) error {
-	asset, ok := e.Graph.FindAsset(link.LinkPath)
+	_, ok := e.Graph.FindAsset(link.LinkPath)
 
 	if !ok {
 		return errors.Errorf("asset not found: %s", link.LinkPath)
 	}
 
-	targetPath := filepath.Join(e.AssetDir, asset.PathInSite)
+	targetPath := e.mapLinkPath(link)
 	sourcePath := filepath.Join(e.Graph.GraphDir, link.LinkPath)
 	targetDir := filepath.Dir(targetPath)
 	log.Debug("Exporting asset:", sourcePath, "→", targetDir)
 
-	if err := os.MkdirAll(filepath.Dir(targetDir), folderPermissions); err != nil {
+	if err := os.MkdirAll(targetDir, folderPermissions); err != nil {
 		return errors.Wrap(err, "creating target directory for assets")
 	}
 
@@ -135,6 +137,12 @@ func (e *Exporter) exportLinkedAsset(link graph.Link) error {
 	}
 
 	return nil
+}
+
+func (e *Exporter) mapLinkPath(link graph.Link) string {
+	assetBase := filepath.Base(link.LinkPath)
+
+	return filepath.Join(e.AssetDir, assetBase)
 }
 
 func (e *Exporter) shouldExportAsset(sourcePath string, targetPath string) (bool, error) {

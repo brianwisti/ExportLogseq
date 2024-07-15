@@ -29,7 +29,6 @@ linters-settings:
           - github.com/bluegosolutions/kong-dotenv-go
           - github.com/stretchr/testify/assert
           - github.com/stretchr/testify/require
-          - github.com/yuin/goldmark
           - olympos.io/encoding/edn
   tagliatelle:
     case:

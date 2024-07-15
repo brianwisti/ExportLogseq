@@ -13,7 +13,6 @@ import (
 type BlockContent struct {
 	BlockID  string          `json:"block_id"` // Block that contains this content
 	Markdown string          `json:"markdown"`
-	HTML     string          `json:"html"`
 	Links    map[string]Link `json:"links"`
 	Callout  string          `json:"callout"`
 }
@@ -22,7 +21,6 @@ func NewEmptyBlockContent() *BlockContent {
 	return &BlockContent{
 		BlockID:  "",
 		Markdown: "",
-		HTML:     "",
 		Callout:  "",
 		Links:    map[string]Link{},
 	}
@@ -100,14 +98,12 @@ func (bc *BlockContent) SetMarkdown(markdown string) error {
 }
 
 func (bc *BlockContent) findLinks() error {
-	err := bc.findPageLinks()
-
-	if err != nil {
+	log.Debug("Finding links in block ", bc.BlockID)
+	if err := bc.findPageLinks(); err != nil {
 		return errors.Wrap(err, "finding page links")
 	}
 
-	err = bc.findResourceLinks()
-	if err != nil {
+	if err := bc.findAssetLinks(); err != nil {
 		return errors.Wrap(err, "finding resource links")
 	}
 
@@ -142,35 +138,29 @@ func (bc *BlockContent) findPageLinks() error {
 	return nil
 }
 
-func (bc *BlockContent) findResourceLinks() error {
+func (bc *BlockContent) findAssetLinks() error {
 	// a regular expression to match URLs, which may have embedded parentheses
 	// https://stackoverflow.com/a/3809435
-	resourceLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\((.*?)\)`)
+	assetLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\((\.\./assets/.*?)\)`)
 
-	for _, match := range resourceLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
-		raw, isEmbed, label, resourceUrl := match[0], match[1], match[2], match[3]
-		log.Debugf("Found resource link: ->%s<- label=%s uri=%s", raw, label, resourceUrl)
+	for _, match := range assetLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
+		raw, isEmbed, label, assetURL := match[0], match[1], match[2], match[3]
+		log.Debugf("Found resource link: ->%s<- label=%s uri=%s", raw, label, assetURL)
 
-		linkType := LinkTypeResource
-		isAsset := strings.HasPrefix(resourceUrl, "../assets/")
-
-		if isAsset == true {
-			linkType = LinkTypeAsset
-			resourceUrl = strings.TrimPrefix(resourceUrl, "..")
-		}
+		assetURL = strings.TrimPrefix(assetURL, "..")
 
 		link := Link{
 			Raw:       raw,
 			LinksFrom: bc.BlockID,
-			LinkPath:  resourceUrl,
+			LinkPath:  assetURL,
 			Label:     label,
-			LinkType:  linkType,
+			LinkType:  LinkTypeAsset,
 			IsEmbed:   isEmbed == "!",
 		}
 
 		_, err := bc.AddLink(link)
 		if err != nil {
-			return errors.Wrap(err, "adding resource link")
+			return errors.Wrap(err, "adding asset link")
 		}
 	}
 

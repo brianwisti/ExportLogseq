@@ -146,7 +146,6 @@ func (loader *Loader) loadAssets() error {
 		}
 
 		asset := graph.NewAsset("/assets/" + relPath)
-		asset.PathInSite = "/img/" + relPath
 		err = loader.Graph.AddAsset(&asset)
 
 		if err != nil {

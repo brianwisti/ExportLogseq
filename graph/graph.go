@@ -1,12 +1,9 @@
 package graph
 
 import (
-	"bytes"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
 )
 
 type Graph struct {
@@ -31,7 +28,7 @@ func (g *Graph) AddAsset(asset *Asset) error {
 		return AssetExistsError{asset.PathInGraph}
 	}
 
-	log.Debugf("Adding asset: %s", asset.PathInGraph)
+	log.Debug("Adding asset" + asset.PathInGraph)
 	g.Assets[assetKey] = asset
 
 	return nil
@@ -60,7 +57,7 @@ func (g *Graph) FindAsset(path string) (*Asset, bool) {
 
 // FindLinksToPage returns all links to a Page.
 func (g *Graph) FindLinksToPage(page *Page) []Link {
-	log.Info("Finding links in graph to: ", page)
+	log.Debug("Finding links in graph to: ", page)
 
 	links := []Link{}
 
@@ -142,11 +139,12 @@ func (g *Graph) PublicGraph() Graph {
 	for _, page := range g.Pages {
 		if page.IsPublic() {
 			publicGraph.AddPage(page)
+			log.Debugf("Adding public page %s with %d links", page.Name, len(page.Links()))
 		}
 	}
 
 	// Add assets that are linked from public pages.
-	for _, link := range publicGraph.Links() {
+	for _, link := range publicGraph.AssetLinks() {
 		if link.LinkType == LinkTypeAsset {
 			log.Debugf("Checking asset %s", link.LinkPath)
 			asset, ok := g.FindAsset(link.LinkPath)
@@ -280,16 +278,4 @@ func (g *Graph) prepBlockForSite(block *Block) {
 
 	log.Debug("Final block Markdown: ", blockMarkdown)
 	block.Content.Markdown = blockMarkdown
-
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
-	)
-
-	var buf bytes.Buffer
-
-	if err := md.Convert([]byte(block.Content.Markdown), &buf); err != nil {
-		log.Fatal("converting markdown to HTML:", err)
-	}
-
-	block.Content.HTML = buf.String()
 }

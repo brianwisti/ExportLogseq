@@ -284,3 +284,29 @@ func TestGraph_PublicGraph(t *testing.T) {
 	_, err = publicGraph.FindPage("Private Page")
 	assert.Error(t, err)
 }
+
+func TestGraph_PublicGraph_WithAssetInPublicPage(t *testing.T) {
+	g := graph.NewGraph()
+
+	publicPage := graph.NewEmptyPage()
+	publicPage.Name = gofakeit.Word()
+	publicPage.PathInSite = gofakeit.Word()
+	publicPage.Root.Properties.Set("public", "true")
+	_ = g.AddPage(&publicPage)
+
+	asset := graph.NewAsset("assets/test.jpg")
+	_ = g.AddAsset(&asset)
+	link := graph.Link{
+		LinkPath: asset.PathInGraph,
+		Label:    asset.PathInGraph,
+		LinkType: graph.LinkTypeAsset,
+		IsEmbed:  false,
+	}
+	link, _ = publicPage.Root.Content.AddLink(link)
+
+	publicGraph := g.PublicGraph()
+	links := publicGraph.AssetLinks()
+
+	assert.NotEmpty(t, links)
+	assert.Contains(t, links, link)
+}
