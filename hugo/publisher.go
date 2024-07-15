@@ -129,6 +129,13 @@ func (e *Exporter) ExportPages() error {
 // ProcessBlock turns a block and its children into Hugo content.
 func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	log.Debug("Processing block ", block.ID)
+
+	if !block.IsPublic() {
+		log.Debug("Skipping non-public block ", block.ID)
+
+		return "", nil
+	}
+
 	blockContent := block.Content.Markdown
 
 	// process page links
@@ -222,8 +229,6 @@ func (e *Exporter) exportPage(page graph.Page) error {
 	log.Debug("Exporting page:", page.Name)
 
 	contentPath := e.PageContentPath(page)
-	log.Debug("Page paths: contentPath=%s", contentPath)
-
 	pageFrontmatter := e.determinePageFrontmatter(page)
 	log.Debug("Page frontmatter:", pageFrontmatter)
 
