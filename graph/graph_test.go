@@ -162,6 +162,17 @@ func TestGraph_FindPage_WithAlias(t *testing.T) {
 	assert.Equal(t, &page, foundPage)
 }
 
+func TestGraph_PagesInNamespace(t *testing.T) {
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
+	page.Name = "test/page"
+	_ = g.AddPage(&page)
+	pages := g.PagesInNamespace("test")
+
+	assert.NotEmpty(t, pages)
+	assert.Contains(t, pages, &page)
+}
+
 func TestGraph_Links(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()

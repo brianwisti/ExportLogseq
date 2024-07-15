@@ -15,10 +15,11 @@ import (
 )
 
 type Exporter struct {
-	Graph      graph.Graph
-	SiteDir    string
-	AssetDir   string
-	ContentDir string
+	Graph          graph.Graph
+	SiteDir        string
+	AssetDir       string
+	ContentDir     string
+	PagePermalinks map[string]string
 }
 
 const (
@@ -28,11 +29,14 @@ const (
 func ExportGraph(graph graph.Graph, siteDir string) error {
 	log.Infof("Exporting from %s to %s", graph.GraphDir, siteDir)
 	exporter := Exporter{
-		Graph:      graph,
-		SiteDir:    siteDir,
-		AssetDir:   filepath.Join(siteDir, "static", "img"),
-		ContentDir: filepath.Join(siteDir, "content"),
+		Graph:          graph,
+		SiteDir:        siteDir,
+		AssetDir:       filepath.Join(siteDir, "static", "img"),
+		ContentDir:     filepath.Join(siteDir, "content"),
+		PagePermalinks: map[string]string{},
 	}
+
+	exporter.PagePermalinks = exporter.SetPagePermalinks()
 
 	if err := exporter.ExportGraphJSON(); err != nil {
 		return errors.Wrap(err, "exporting graph JSON")
@@ -43,6 +47,7 @@ func ExportGraph(graph graph.Graph, siteDir string) error {
 	}
 
 	log.Infof("Exporting assets from %d asset links", len(graph.AssetLinks()))
+
 	if err := exporter.ExportAssets(); err != nil {
 		return errors.Wrap(err, "exporting assets")
 	}
@@ -103,6 +108,7 @@ func (e *Exporter) ExportPages() error {
 	log.Info("Exporting pages to: ", e.ContentDir)
 
 	log.Warning("Removing existing content directory")
+
 	if err := os.RemoveAll(e.ContentDir); err != nil {
 		return errors.Wrap(err, "removing existing content directory")
 	}
@@ -123,8 +129,23 @@ func (e *Exporter) ExportPages() error {
 // ProcessBlock turns a block and its children into Hugo content.
 func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	log.Debug("Processing block ", block.ID)
-	blockContent := strings.Replace(block.Content.Markdown, "{{<", "{{/**/<", -1)
+	blockContent := block.Content.Markdown
 
+	// process page links
+	for _, link := range block.Links() {
+		if link.LinkType == graph.LinkTypePage {
+			replacement := "*" + link.Label + "*"
+
+			permalink, ok := e.PagePermalink(link.LinkPath)
+			if ok {
+				replacement = "[" + link.Label + "](" + permalink + ")"
+			}
+
+			blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
+		}
+	}
+
+	blockContent = strings.Replace(blockContent, "{{<", "{{/**/<", -1)
 	processedContent := "\n{{% block %}}"
 
 	if block.IsHeader() {
@@ -198,10 +219,10 @@ func (e *Exporter) exportLinkedAsset(link graph.Link) error {
 }
 
 func (e *Exporter) exportPage(page graph.Page) error {
-	log.Info("Exporting page:", page.Name)
+	log.Debug("Exporting page:", page.Name)
 
-	permalink, contentPath := e.determinePagePaths(page)
-	log.Infof("Page paths: permalink=%s; contentPath=%s", permalink, contentPath)
+	contentPath := e.PageContentPath(page)
+	log.Debug("Page paths: contentPath=%s", contentPath)
 
 	pageFrontmatter := e.determinePageFrontmatter(page)
 	log.Debug("Page frontmatter:", pageFrontmatter)
@@ -219,6 +240,7 @@ func (e *Exporter) exportPage(page graph.Page) error {
 	}
 
 	fileContent := fmt.Sprintf("---\n%s\n---\n%s", pageFrontmatter, pageContent)
+
 	file, err := os.Create(contentPath)
 	if err != nil {
 		return errors.Wrap(err, "creating content file")
@@ -251,30 +273,60 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	return string(frontmatterBytes)
 }
 
-// determinePagePaths determines the permalink and content path for a Page.
-func (e *Exporter) determinePagePaths(page graph.Page) (string, string) {
-	nameSteps := strings.Split(page.Name, "/")
-	slugSteps := []string{}
+// SetPagePermalinks builds a map of page names to permalinks.
+func (e *Exporter) SetPagePermalinks() map[string]string {
 
-	for _, step := range nameSteps {
-		slugSteps = append(slugSteps, slug.Make(step))
+	permalinks := map[string]string{}
+
+	for _, page := range e.Graph.Pages {
+		nameSteps := strings.Split(page.Name, "/")
+		slugSteps := []string{}
+
+		for _, step := range nameSteps {
+			slugSteps = append(slugSteps, slug.Make(step))
+		}
+
+		permalink := strings.Join(slugSteps, "/")
+		nameKey := strings.ToLower(page.Name)
+		permalinks[nameKey] = permalink
 	}
 
-	permalink := strings.Join(slugSteps, "/")
+	return permalinks
+}
+
+// PagePermalink determines the permalink for a Page.
+func (e *Exporter) PagePermalink(pageName string) (string, bool) {
+	nameKey := strings.ToLower(pageName)
+	permalink, ok := e.PagePermalinks[nameKey]
+
+	if !ok {
+		log.Warn("No permalink found for page:", pageName)
+	}
+
+	return "/" + permalink, ok
+}
+
+// PageContentPath determines the content file path for a Page.
+func (e *Exporter) PageContentPath(page graph.Page) string {
+	permalink, ok := e.PagePermalink(page.Name)
+	if !ok {
+		log.Fatalf("No permalink found for page: %s", page.Name)
+	}
 
 	// Determine the target path for the page.
 	pageSubtree := strings.Split(permalink, "/")
 	pageSubtree = append([]string{e.ContentDir}, pageSubtree...)
 
-	// If the page is a section, write it as an _index.md file
-	if page.IsSection() {
-		log.Info("Page is a section " + page.Name)
+	// Find pages in the page's namespace
+	subpages := e.Graph.PagesInNamespace(page.Name)
+
+	if len(subpages) > 0 {
 		pageSubtree = append(pageSubtree, "_index")
 	}
 
 	contentPath := filepath.Join(pageSubtree...) + ".md"
 
-	return permalink, contentPath
+	return contentPath
 }
 
 func (e *Exporter) mapLinkPath(link graph.Link) string {

@@ -131,6 +131,20 @@ func (g *Graph) PageLinks() []Link {
 	return links
 }
 
+// PagesInNamespace returns all pages in a namespace.
+func (g *Graph) PagesInNamespace(namespace string) []*Page {
+	pages := []*Page{}
+	asPrefix := namespace + "/"
+
+	for _, page := range g.Pages {
+		if strings.HasPrefix(page.Name, asPrefix) {
+			pages = append(pages, page)
+		}
+	}
+
+	return pages
+}
+
 // PublicGraph returns a copy of the graph with only public pages.
 func (g *Graph) PublicGraph() Graph {
 	publicGraph := NewGraph()
@@ -166,25 +180,6 @@ func (g *Graph) PublicGraph() Graph {
 	return publicGraph
 }
 
-// Assign Page.kind of "section" based on pages whose names are prefixes of other page names.
-func (g *Graph) PutPagesInContext() {
-	for thisName, thisPage := range g.Pages {
-		for otherName := range g.Pages {
-			if thisName == otherName {
-				continue
-			}
-
-			if strings.HasPrefix(otherName, thisName) {
-				thisPage.Kind = "section"
-
-				break
-			}
-		}
-
-		g.prepPageForSite(thisPage)
-	}
-}
-
 // ResourceLinks returns all resource links found in the graph.
 func (g *Graph) ResourceLinks() []Link {
 	links := []Link{}
@@ -198,15 +193,6 @@ func (g *Graph) ResourceLinks() []Link {
 	log.Debug("Resource links found: ", len(links))
 
 	return links
-}
-
-func (g *Graph) prepPageForSite(page *Page) {
-	blockCount := len(page.AllBlocks)
-	log.Debug("Prepping ", page.Name, " with ", blockCount, " blocks")
-
-	for _, block := range page.AllBlocks {
-		g.prepBlockForSite(block)
-	}
 }
 
 func (g *Graph) prepBlockForSite(block *Block) {

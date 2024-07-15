@@ -54,8 +54,6 @@ func LoadGraph(graphDir string) (graph.Graph, error) {
 		}
 	}
 
-	loader.Graph.PutPagesInContext()
-
 	return loader.Graph, nil
 }
 
