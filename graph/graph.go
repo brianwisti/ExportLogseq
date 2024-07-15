@@ -247,7 +247,7 @@ func (g *Graph) prepBlockForSite(block *Block) {
 		}
 
 		if targetPage != nil {
-			permalink := "/" + targetPage.PathInSite
+			permalink := "/" + targetPage.PathInGraph
 			log.Debug("Linking ", block.ID, " to ", permalink)
 			linkString = "[" + link.Label + "](" + permalink + ")"
 		}

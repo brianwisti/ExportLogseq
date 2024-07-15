@@ -119,7 +119,6 @@ func TestPage_Properties_Empty(t *testing.T) {
 func TestPage_Properties_FromRoot(t *testing.T) {
 	page := graph.NewEmptyPage()
 	page.Name = "Test Page"
-	page.PathInSite = "test-page"
 	page.Root.Properties.Set("id", "123")
 	pageProps := page.Properties()
 	got, ok := pageProps.Get("id")

@@ -47,7 +47,6 @@ func TestGraph_AddPage(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	page.PathInSite = gofakeit.Word()
 	err := g.AddPage(&page)
 	assert.NoError(t, err)
 
@@ -62,7 +61,6 @@ func TestGraph_AddPage_WithExistingPage(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	page.PathInSite = gofakeit.Word()
 	_ = g.AddPage(&page)
 	err := g.AddPage(&page)
 
@@ -126,7 +124,6 @@ func TestGraph_FindPage(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	page.PathInSite = gofakeit.Word()
 	_ = g.AddPage(&page)
 	foundPage, err := g.FindPage(page.Name)
 
@@ -138,7 +135,6 @@ func TestGraph_FindPage_CaseInsensitive(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	page.PathInSite = gofakeit.Word()
 	_ = g.AddPage(&page)
 	foundPage, err := g.FindPage(page.Name)
 
@@ -158,7 +154,6 @@ func TestGraph_FindPage_WithAlias(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	page.PathInSite = gofakeit.Word()
 	page.Root.Properties.Set("alias", "alias")
 	_ = g.AddPage(&page)
 	foundPage, err := g.FindPage("alias")
@@ -171,7 +166,6 @@ func TestGraph_Links(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	page.PathInSite = gofakeit.Word()
 	link := graph.Link{
 		LinkPath: gofakeit.URL(),
 		Label:    gofakeit.Phrase(),
@@ -245,7 +239,6 @@ func TestGraph_ResourceLinks(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	page.PathInSite = gofakeit.Word()
 	url, label := gofakeit.URL(), gofakeit.Phrase()
 	link := graph.Link{
 		LinkPath: url,
@@ -265,13 +258,11 @@ func TestGraph_PublicGraph(t *testing.T) {
 
 	publicPage := graph.NewEmptyPage()
 	publicPage.Name = gofakeit.Word()
-	publicPage.PathInSite = gofakeit.Word()
 	publicPage.Root.Properties.Set("public", "true")
 	_ = g.AddPage(&publicPage)
 
 	privatePage := graph.NewEmptyPage()
 	privatePage.Name = "Private Page"
-	privatePage.PathInSite = "private-page"
 	privatePage.Root.Properties.Set("public", "false")
 	_ = g.AddPage(&privatePage)
 
@@ -290,7 +281,6 @@ func TestGraph_PublicGraph_WithAssetInPublicPage(t *testing.T) {
 
 	publicPage := graph.NewEmptyPage()
 	publicPage.Name = gofakeit.Word()
-	publicPage.PathInSite = gofakeit.Word()
 	publicPage.Root.Properties.Set("public", "true")
 	_ = g.AddPage(&publicPage)
 

@@ -88,6 +88,13 @@ func (b *Block) InContext(g Graph) (string, error) {
 	return "/" + b.PageName + "#" + b.ID, nil
 }
 
+func (b *Block) IsHeader() bool {
+	if headerProp, ok := b.Properties.Get("heading"); ok {
+		return headerProp.Bool()
+	}
+
+	return false
+}
 func (b *Block) IsPublic() bool {
 	if publicProp, ok := b.Properties.Get("public"); ok {
 		return publicProp.Bool()

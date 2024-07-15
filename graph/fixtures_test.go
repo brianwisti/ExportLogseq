@@ -15,7 +15,6 @@ func BlockContent() *graph.BlockContent {
 func Page() graph.Page {
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	page.PathInSite = gofakeit.Word()
 	page.PathInGraph = gofakeit.Word()
 
 	return page

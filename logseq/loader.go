@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -85,13 +84,6 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 
 	nameSteps := strings.Split(fullPageName, "/")
 	title := nameSteps[len(nameSteps)-1]
-	slugSteps := []string{}
-
-	for _, step := range nameSteps {
-		slugSteps = append(slugSteps, slug.Make(step))
-	}
-
-	pathInSite := strings.Join(slugSteps, "/")
 
 	// Process each line of fullPageName
 	file, err := os.Open(pageFile)
@@ -109,7 +101,6 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 		Name:        fullPageName,
 		Title:       title,
 		PathInGraph: pathInGraph,
-		PathInSite:  pathInSite,
 		Kind:        "page",
 	}
 
