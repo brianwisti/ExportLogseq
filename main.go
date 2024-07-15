@@ -4,12 +4,28 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"export-logseq/hugo"
 	"export-logseq/logseq"
 )
+
+type EnvFlag string
+
+// BeforeResolve loads .env file before resolving the command line arguments.
+func (c EnvFlag) BeforeReset(ctx *kong.Context, trace *kong.Path) error {
+	path := string(ctx.FlagValue(trace.Flag).(EnvFlag)) //nolint
+	path = kong.ExpandPath(path)
+	log.Infof("Loading .env file from %s", path)
+
+	if err := godotenv.Load(path); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 type SelectedPages string
 
@@ -19,9 +35,9 @@ const (
 )
 
 type ExportCmd struct {
-	GraphDir      string        `env:"GRAPH_DIR" arg:""            help:"Path to the Logseq graph directory."`
-	SiteDir       string        `env:"SITE_DIR" arg:""            help:"Path to the site directory."`
-	SelectedPages SelectedPages `enum:"all,public" default:"public" help:"Select pages to export."`
+	GraphDir      string        `arg:""           env:"GRAPH_DIR"   help:"Path to the Logseq graph directory."`
+	SiteDir       string        `arg:""           env:"SITE_DIR"    help:"Path to the site directory."`
+	SelectedPages SelectedPages `default:"public" enum:"all,public" help:"Select pages to export."`
 }
 
 func (cmd *ExportCmd) Run() error {
@@ -44,7 +60,8 @@ func (cmd *ExportCmd) Run() error {
 }
 
 type CLI struct {
-	Export ExportCmd `cmd:"" help:"Export a Logseq graph to SSG content folder."`
+	EnvFile EnvFlag
+	Export  ExportCmd `cmd:"" help:"Export a Logseq graph to SSG content folder."`
 }
 
 func main() {

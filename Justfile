@@ -1,5 +1,5 @@
 run:
-    go run . export ~/my-logseq-brain ~/www/rgb-logseq-hugo
+    go run . export --env-file=.env
 
 test:
 	go test ./...

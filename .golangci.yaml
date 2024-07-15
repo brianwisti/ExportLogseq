@@ -23,6 +23,7 @@ linters-settings:
           - github.com/brianvoe/gofakeit/v7
           - github.com/google/uuid
           - github.com/gosimple/slug
+          - github.com/joho/godotenv
           - github.com/pkg/errors
           - github.com/sirupsen/logrus
           - github.com/alecthomas/kong
