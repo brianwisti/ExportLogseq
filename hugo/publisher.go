@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
@@ -117,11 +118,25 @@ func (e *Exporter) ExportPages() error {
 		return errors.Wrap(err, "creating content directory "+e.ContentDir)
 	}
 
+	wg := new(sync.WaitGroup)
+	c := make(chan int)
+
 	for _, page := range e.Graph.Pages {
-		if err := e.exportPage(*page); err != nil {
-			return errors.Wrap(err, "exporting page")
-		}
+		wg.Add(1)
+
+		go func(wg *sync.WaitGroup, page *graph.Page) {
+			defer wg.Done()
+
+			err := e.exportPage(*page)
+
+			if err != nil {
+				log.Error("Error exporting page:", err)
+				close(c)
+			}
+		}(wg, page)
 	}
+
+	wg.Wait()
 
 	return nil
 }
@@ -267,7 +282,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	for _, link := range e.Graph.FindLinksToPage(&page) {
 		blockID := link.LinksFrom
 
-		log.Info("Found backlink from: ", blockID)
+		log.Debug("Found backlink from: ", blockID)
 
 		block, ok := e.Graph.Blocks[blockID]
 
