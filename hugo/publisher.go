@@ -262,6 +262,33 @@ func (e *Exporter) exportPage(page graph.Page) error {
 
 func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	date := ""
+	backlinks := []string{}
+
+	for _, link := range e.Graph.FindLinksToPage(&page) {
+		blockID := link.LinksFrom
+
+		log.Info("Found backlink from: ", blockID)
+
+		block, ok := e.Graph.Blocks[blockID]
+
+		if !ok {
+			log.Warn("Block not found for link: ", blockID)
+
+			continue
+		}
+
+		pagePermalink, ok := e.PagePermalink(block.PageName)
+
+		if !ok {
+			log.Warn("No permalink found for block: ", blockID)
+
+			continue
+		}
+
+		backlink := "[" + block.PageName + "](" + pagePermalink + ")"
+
+		backlinks = append(backlinks, backlink)
+	}
 
 	dateProp, ok := page.Root.Properties.Get("date")
 	if ok {
@@ -269,11 +296,13 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	}
 
 	frontmatter := struct {
-		Title string `json:"title"`
-		Date  string `json:"date"`
+		Title     string   `json:"title"`
+		Date      string   `json:"date"`
+		Backlinks []string `json:"backlinks"`
 	}{
-		Title: page.Title,
-		Date:  date,
+		Title:     page.Title,
+		Date:      date,
+		Backlinks: backlinks,
 	}
 
 	// encode the frontmatter to JSON

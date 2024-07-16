@@ -119,5 +119,5 @@ func (b *Block) Links() []Link {
 }
 
 func (b *Block) String() string {
-	return fmt.Sprintf("<Block: %s#%s>", b.PageName, b.ID)
+	return fmt.Sprintf("%s#%s", b.PageName, b.ID)
 }

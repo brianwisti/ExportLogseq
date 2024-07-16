@@ -9,6 +9,7 @@ import (
 type Graph struct {
 	GraphDir string
 	Pages    map[string]*Page  `json:"pages"`
+	Blocks   map[string]*Block `json:"-"`
 	Assets   map[string]*Asset `json:"assets"`
 }
 
@@ -16,6 +17,7 @@ func NewGraph() Graph {
 	return Graph{
 		Pages:  map[string]*Page{},
 		Assets: map[string]*Asset{},
+		Blocks: map[string]*Block{},
 	}
 }
 
@@ -44,6 +46,10 @@ func (g *Graph) AddPage(page *Page) error {
 	}
 
 	g.Pages[pageKey] = page
+
+	for _, block := range page.AllBlocks {
+		g.Blocks[block.ID] = block
+	}
 
 	return nil
 }
