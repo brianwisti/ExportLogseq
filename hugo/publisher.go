@@ -72,10 +72,28 @@ func (e *Exporter) ExportAssets() error {
 		return errors.Wrap(err, "creating asset directory "+e.AssetDir)
 	}
 
+	wg := new(sync.WaitGroup)
+	wg.Add(len(e.Graph.AssetLinks()))
+
+	errCh := make(chan error, 1)
+
 	for _, link := range e.Graph.AssetLinks() {
-		if err := e.exportLinkedAsset(link); err != nil {
-			return errors.Wrap(err, "exporting linked asset")
-		}
+		go func(wg *sync.WaitGroup, link graph.Link) {
+			defer wg.Done()
+
+			if err := e.exportLinkedAsset(link); err != nil {
+				errCh <- errors.Wrap(err, "exporting linked asset")
+
+				return
+			}
+		}(wg, link)
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	if err, ok := <-errCh; ok {
+		return err
 	}
 
 	return nil

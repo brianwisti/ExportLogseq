@@ -157,13 +157,11 @@ func (loader *Loader) loadPagesFromDir(subdir string) error {
 	}
 
 	wg := new(sync.WaitGroup)
+	wg.Add(len(pageFiles))
 	pageCh := make(chan graph.Page, len(pageFiles))
 	errCh := make(chan error, 1)
 
 	for _, pageFile := range pageFiles {
-		log.Info("Loading page:", pageFile)
-		wg.Add(1)
-
 		go func(wg *sync.WaitGroup, pageFile string) {
 			defer wg.Done()
 
@@ -188,8 +186,6 @@ func (loader *Loader) loadPagesFromDir(subdir string) error {
 	}
 
 	for page := range pageCh {
-		log.Info("Adding page:", page.Name)
-
 		err := g.AddPage(&page)
 		if err != nil {
 			return errors.Wrap(err, "adding page "+page.Name)
