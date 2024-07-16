@@ -64,6 +64,12 @@ func (e *Exporter) ExportAssets() error {
 
 	log.Infof("Exporting assets to: %s", e.AssetDir)
 
+	log.Warning("Removing existing content directory")
+
+	if err := os.RemoveAll(e.AssetDir); err != nil {
+		return errors.Wrap(err, "removing existing asset directory")
+	}
+
 	if err := os.MkdirAll(e.AssetDir, folderPermissions); err != nil {
 		return errors.Wrap(err, "creating asset directory "+e.AssetDir)
 	}
