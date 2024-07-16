@@ -16,11 +16,12 @@ import (
 )
 
 type Exporter struct {
-	Graph          graph.Graph
-	SiteDir        string
-	AssetDir       string
-	ContentDir     string
-	PagePermalinks map[string]string
+	Graph           graph.Graph
+	SiteDir         string
+	AssetDir        string
+	ContentDir      string
+	PagePermalinks  map[string]string
+	AssetPermalinks map[string]string
 }
 
 const (
@@ -30,14 +31,16 @@ const (
 func ExportGraph(graph graph.Graph, siteDir string) error {
 	log.Infof("Exporting from %s to %s", graph.GraphDir, siteDir)
 	exporter := Exporter{
-		Graph:          graph,
-		SiteDir:        siteDir,
-		AssetDir:       filepath.Join(siteDir, "static", "img"),
-		ContentDir:     filepath.Join(siteDir, "content"),
-		PagePermalinks: map[string]string{},
+		Graph:           graph,
+		SiteDir:         siteDir,
+		AssetDir:        filepath.Join(siteDir, "assets", "graph-assets"),
+		ContentDir:      filepath.Join(siteDir, "content"),
+		PagePermalinks:  map[string]string{},
+		AssetPermalinks: map[string]string{},
 	}
 
 	exporter.PagePermalinks = exporter.SetPagePermalinks()
+	exporter.AssetPermalinks = exporter.SetAssetPermalinks()
 
 	if err := exporter.ExportGraphJSON(); err != nil {
 		return errors.Wrap(err, "exporting graph JSON")
@@ -62,7 +65,7 @@ func ExportGraph(graph graph.Graph, siteDir string) error {
 // ExportAssets exports graph asset files to the site directory.
 func (e *Exporter) ExportAssets() error {
 	log.Infof("Exporting assets to: %s", e.AssetDir)
-	log.Warning("Removing existing content directory")
+	log.Warning("Removing existing asset directory")
 
 	if err := os.RemoveAll(e.AssetDir); err != nil {
 		return errors.Wrap(err, "removing existing asset directory")
@@ -73,29 +76,42 @@ func (e *Exporter) ExportAssets() error {
 	}
 
 	wg := new(sync.WaitGroup)
-	wg.Add(len(e.Graph.AssetLinks()))
+	errCh := make(chan error)
 
-	errCh := make(chan error, 1)
+	for _, asset := range e.Graph.Assets {
+		wg.Add(1)
+		log.Info("Exporting asset " + asset.Name)
 
-	for _, link := range e.Graph.AssetLinks() {
-		go func(wg *sync.WaitGroup, link graph.Link) {
+		go func(wg *sync.WaitGroup, asset graph.Asset) {
 			defer wg.Done()
 
-			if err := e.exportLinkedAsset(link); err != nil {
-				errCh <- errors.Wrap(err, "exporting linked asset")
+			if err := e.ExportLinkedAsset(asset); err != nil {
+				log.Errorf("Error exporting asset %s: %v", asset.Name, err)
+				errCh <- errors.Wrap(err, "exporting asset")
 
 				return
 			}
-		}(wg, link)
+		}(wg, *asset)
 	}
 
 	wg.Wait()
 	close(errCh)
 
-	if err, ok := <-errCh; ok {
-		return err
+	exportOk := true
+
+	for err := range errCh {
+		log.Info("Checking for errors in asset export")
+		if err != nil {
+			exportOk = false
+			log.Error("Error exporting assets: ", err)
+		}
 	}
 
+	if !exportOk {
+		return errors.New("error exporting assets")
+	}
+
+	log.Info("Exported assets")
 	return nil
 }
 
@@ -186,6 +202,15 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 			}
 
 			blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
+		} else if link.LinkType == graph.LinkTypeAsset {
+			replacement := "*" + link.Label + "*"
+
+			permalink, ok := e.AssetPermalink(link.LinkPath)
+			if ok {
+				replacement = "![" + link.Label + "](" + permalink + ")"
+			}
+
+			blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
 		}
 	}
 
@@ -213,21 +238,11 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	return processedContent, nil
 }
 
-func (e *Exporter) exportLinkedAsset(link graph.Link) error {
-	_, ok := e.Graph.FindAsset(link.LinkPath)
-
-	if !ok {
-		return errors.Errorf("asset not found: %s", link.LinkPath)
-	}
-
-	targetPath := e.mapLinkPath(link)
-	sourcePath := filepath.Join(e.Graph.GraphDir, link.LinkPath)
+func (e *Exporter) ExportLinkedAsset(asset graph.Asset) error {
+	targetPath := e.PublishedAssetPath(asset.Name)
+	sourcePath := filepath.Join(e.Graph.GraphDir, "assets", asset.PathInGraph)
 	targetDir := filepath.Dir(targetPath)
-	log.Debug("Exporting asset:", sourcePath, "→", targetDir)
-
-	if err := os.MkdirAll(targetDir, folderPermissions); err != nil {
-		return errors.Wrap(err, "creating target directory for assets")
-	}
+	log.Info("Exporting asset:", sourcePath, "→", targetDir)
 
 	log.Debugf("Exporting asset: %s → %s", sourcePath, targetPath)
 	// Copy the file at sourcePath to targetPath
@@ -354,6 +369,18 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	return string(frontmatterBytes)
 }
 
+// SetAssetPermalinks builds a map of asset names to permalinks.
+func (e *Exporter) SetAssetPermalinks() map[string]string {
+	permalinks := map[string]string{}
+
+	for _, asset := range e.Graph.Assets {
+		nameKey := strings.ToLower(asset.Name)
+		permalinks[nameKey] = "/graph-assets/" + asset.Name
+	}
+
+	return permalinks
+}
+
 // SetPagePermalinks builds a map of page names to permalinks.
 func (e *Exporter) SetPagePermalinks() map[string]string {
 	permalinks := map[string]string{}
@@ -369,9 +396,27 @@ func (e *Exporter) SetPagePermalinks() map[string]string {
 		permalink := strings.Join(slugSteps, "/")
 		nameKey := strings.ToLower(page.Name)
 		permalinks[nameKey] = permalink
+
+		// Don't forget page aliases!
+		for _, alias := range page.Aliases() {
+			aliasKey := strings.ToLower(alias)
+			permalinks[aliasKey] = permalink
+		}
 	}
 
 	return permalinks
+}
+
+// AssetPermalink determines the permalink for an Asset.
+func (e *Exporter) AssetPermalink(assetName string) (string, bool) {
+	nameKey := strings.ToLower(assetName)
+	permalink, ok := e.AssetPermalinks[nameKey]
+
+	if !ok {
+		log.Debug("No permalink found for asset:", assetName)
+	}
+
+	return permalink, ok
 }
 
 // PagePermalink determines the permalink for a Page.
@@ -409,8 +454,8 @@ func (e *Exporter) PageContentPath(page graph.Page) string {
 	return contentPath
 }
 
-func (e *Exporter) mapLinkPath(link graph.Link) string {
-	assetBase := filepath.Base(link.LinkPath)
+func (e *Exporter) PublishedAssetPath(assetName string) string {
+	assetBase := filepath.Base(assetName)
 
 	return filepath.Join(e.AssetDir, assetBase)
 }
@@ -426,20 +471,22 @@ func (e *Exporter) shouldExportAsset(sourcePath string, targetPath string) (bool
 	}
 
 	targetFileStat, err := os.Stat(targetPath)
-	if err == nil {
-		if !targetFileStat.Mode().IsRegular() {
-			return false, errors.Errorf("target file is not a regular file: %s", targetPath)
-		}
-
-		if os.SameFile(sourceFileStat, targetFileStat) {
-			log.Debugf("source and target are the same file: %s", sourcePath)
-
-			return false, nil
-		}
-	} else {
+	if err != nil {
 		if !os.IsNotExist(err) {
 			return false, errors.Wrap(err, "checking target file")
 		}
+
+		return true, nil
+	}
+
+	if !targetFileStat.Mode().IsRegular() {
+		return false, errors.Errorf("target file is not a regular file: %s", targetPath)
+	}
+
+	if os.SameFile(sourceFileStat, targetFileStat) {
+		log.Debugf("source and target are the same file: %s", sourcePath)
+
+		return false, nil
 	}
 
 	return true, nil

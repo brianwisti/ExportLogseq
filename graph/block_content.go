@@ -142,18 +142,16 @@ func (bc *BlockContent) findPageLinks() error {
 func (bc *BlockContent) findAssetLinks() error {
 	// a regular expression to match URLs, which may have embedded parentheses
 	// https://stackoverflow.com/a/3809435
-	assetLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\((\.\./assets/.*?)\)`)
+	assetLinkRe := regexp.MustCompile(`(!?)\[(.*?)\]\(\.\./assets/(.*?)\)`)
 
 	for _, match := range assetLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
-		raw, isEmbed, label, assetURL := match[0], match[1], match[2], match[3]
-		log.Debugf("Found resource link: ->%s<- label=%s uri=%s", raw, label, assetURL)
-
-		assetURL = strings.TrimPrefix(assetURL, "..")
+		raw, isEmbed, label, assetFile := match[0], match[1], match[2], match[3]
+		log.Debugf("Found resource link: ->%s<- label=%s uri=%s", raw, label, assetFile)
 
 		link := Link{
 			Raw:       raw,
 			LinksFrom: bc.BlockID,
-			LinkPath:  assetURL,
+			LinkPath:  assetFile,
 			Label:     label,
 			LinkType:  LinkTypeAsset,
 			IsEmbed:   isEmbed == "!",

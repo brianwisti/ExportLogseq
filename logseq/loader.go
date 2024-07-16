@@ -135,7 +135,7 @@ func (loader *Loader) loadAssets() error {
 			return errors.Wrap(err, "calculating relative path for asset")
 		}
 
-		asset := graph.NewAsset("/assets/" + relPath)
+		asset := graph.NewAsset(relPath)
 		err = loader.Graph.AddAsset(&asset)
 
 		if err != nil {
