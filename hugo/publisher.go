@@ -193,25 +193,8 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 
 	// process page links
 	for _, link := range block.Links() {
-		if link.LinkType == graph.LinkTypePage {
-			replacement := "*" + link.Label + "*"
-
-			permalink, ok := e.PagePermalink(link.LinkPath)
-			if ok {
-				replacement = "[" + link.Label + "](" + permalink + ")"
-			}
-
-			blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
-		} else if link.LinkType == graph.LinkTypeAsset {
-			replacement := "*" + link.Label + "*"
-
-			permalink, ok := e.AssetPermalink(link.LinkPath)
-			if ok {
-				replacement = "![" + link.Label + "](" + permalink + ")"
-			}
-
-			blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
-		}
+		replacement := e.ProcessBlockLink(link)
+		blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
 	}
 
 	blockContent = strings.Replace(blockContent, "{{<", "{{/**/<", -1)
@@ -249,6 +232,33 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	processedContent = processedContent + "{{% /block %}}"
 
 	return processedContent, nil
+}
+
+func (e *Exporter) ProcessBlockLink(link graph.Link) string {
+	if link.LinkType == graph.LinkTypePage {
+		permalink, ok := e.PagePermalink(link.LinkPath)
+		if ok {
+			return "[" + link.Label + "](" + permalink + ")"
+		}
+
+		return UnavailableLink(link.Label)
+	}
+
+	if link.LinkType == graph.LinkTypeAsset {
+		permalink, ok := e.AssetPermalink(link.LinkPath)
+		if ok {
+			return "![" + link.Label + "](" + permalink + ")"
+		}
+
+		return UnavailableLink(link.Label)
+	}
+
+	return link.Label
+}
+
+// UnavailableLink returns a string used to indicate a missing link.
+func UnavailableLink(label string) string {
+	return "*" + label + "*"
 }
 
 func (e *Exporter) ExportLinkedAsset(asset graph.Asset) error {
