@@ -61,9 +61,7 @@ func ExportGraph(graph graph.Graph, siteDir string) error {
 
 // ExportAssets exports graph asset files to the site directory.
 func (e *Exporter) ExportAssets() error {
-
 	log.Infof("Exporting assets to: %s", e.AssetDir)
-
 	log.Warning("Removing existing content directory")
 
 	if err := os.RemoveAll(e.AssetDir); err != nil {
@@ -340,7 +338,6 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 
 // SetPagePermalinks builds a map of page names to permalinks.
 func (e *Exporter) SetPagePermalinks() map[string]string {
-
 	permalinks := map[string]string{}
 
 	for _, page := range e.Graph.Pages {
@@ -365,7 +362,7 @@ func (e *Exporter) PagePermalink(pageName string) (string, bool) {
 	permalink, ok := e.PagePermalinks[nameKey]
 
 	if !ok {
-		log.Warn("No permalink found for page:", pageName)
+		log.Debug("No permalink found for page:", pageName)
 	}
 
 	return "/" + permalink, ok

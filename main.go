@@ -52,6 +52,7 @@ func (cmd *ExportCmd) Run() error {
 	}
 
 	log.Infof("Graph has %d pages and %d assets", len(graph.Pages), len(graph.Assets))
+
 	if err := hugo.ExportGraph(graph, cmd.SiteDir); err != nil {
 		return errors.Wrap(err, "exporting graph")
 	}

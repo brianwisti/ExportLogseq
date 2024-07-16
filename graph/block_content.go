@@ -99,6 +99,7 @@ func (bc *BlockContent) SetMarkdown(markdown string) error {
 
 func (bc *BlockContent) findLinks() error {
 	log.Debug("Finding links in block ", bc.BlockID)
+
 	if err := bc.findPageLinks(); err != nil {
 		return errors.Wrap(err, "finding page links")
 	}

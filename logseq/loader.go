@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -155,16 +156,43 @@ func (loader *Loader) loadPagesFromDir(subdir string) error {
 		return errors.Wrap(err, "listing page files")
 	}
 
+	wg := new(sync.WaitGroup)
+	pageCh := make(chan graph.Page, len(pageFiles))
+	errCh := make(chan error, 1)
+
 	for _, pageFile := range pageFiles {
-		page, err := loader.LoadPage(pageFile, pagesDir)
+		log.Info("Loading page:", pageFile)
+		wg.Add(1)
 
-		if err != nil {
-			return errors.Wrap(err, "loading page "+pageFile)
-		}
+		go func(wg *sync.WaitGroup, pageFile string) {
+			defer wg.Done()
 
-		err = g.AddPage(&page)
+			page, err := loader.LoadPage(pageFile, pagesDir)
+			if err != nil {
+				errCh <- errors.Wrap(err, "loading page "+pageFile)
+
+				return
+			}
+
+			pageCh <- page
+		}(wg, pageFile)
+	}
+
+	wg.Wait()
+	close(errCh)
+	close(pageCh)
+
+	err = <-errCh
+	if err != nil {
+		return errors.Wrap(err, "loading pages")
+	}
+
+	for page := range pageCh {
+		log.Info("Adding page:", page.Name)
+
+		err := g.AddPage(&page)
 		if err != nil {
-			return errors.Wrap(err, "adding loaded page "+pageFile)
+			return errors.Wrap(err, "adding page "+page.Name)
 		}
 	}
 
