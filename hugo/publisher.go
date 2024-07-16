@@ -215,14 +215,27 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	}
 
 	blockContent = strings.Replace(blockContent, "{{<", "{{/**/<", -1)
-	processedContent := "\n{{% block %}}"
+	shortcodeArgs := map[string]string{}
+
+	shortcodeArgs["id"] = block.ID
+
+	captionProp, ok := block.Properties.Get("caption")
+	if ok {
+		shortcodeArgs["caption"] = strings.Replace(captionProp.Value, "\"", "\\\"", -1)
+	}
+
+	shortCode := "block"
+
+	for arg, value := range shortcodeArgs {
+		shortCode = shortCode + " " + arg + "=\"" + value + "\""
+	}
 
 	if block.IsHeader() {
 		headerString := fmt.Sprintf(`{{%% block-header level=%d %%}}%s{{%% /block-header %%}}`, block.Depth, blockContent)
-		processedContent = processedContent + headerString
-	} else {
-		processedContent = processedContent + blockContent
+		blockContent = headerString
 	}
+
+	processedContent := "\n{{% " + shortCode + " %}}" + blockContent
 
 	for _, childBlock := range block.Children {
 		childContent, err := e.ProcessBlock(*childBlock)
