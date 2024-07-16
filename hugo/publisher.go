@@ -261,10 +261,19 @@ func (e *Exporter) exportPage(page graph.Page) error {
 }
 
 func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
+	date := ""
+
+	dateProp, ok := page.Root.Properties.Get("date")
+	if ok {
+		date = dateProp.String()
+	}
+
 	frontmatter := struct {
 		Title string `json:"title"`
+		Date  string `json:"date"`
 	}{
 		Title: page.Title,
+		Date:  date,
 	}
 
 	// encode the frontmatter to JSON
@@ -272,6 +281,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	frontmatterBytes, err := json.Marshal(frontmatter)
 	if err != nil {
 		log.Error("Error encoding frontmatter:", err)
+
 		return ""
 	}
 
