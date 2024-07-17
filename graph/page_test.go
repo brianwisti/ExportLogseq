@@ -45,6 +45,14 @@ func TestPage_Aliases_FromProperties(t *testing.T) {
 	}
 }
 
+func TestPage_IsJournal(t *testing.T) {
+	page := graph.NewEmptyPage()
+	page.Name = "2022-01-01"
+	page.Title = page.Name
+
+	assert.True(t, page.IsJournal())
+}
+
 func TestPage_IsPlaceholder(t *testing.T) {
 	isPlaceholderTests := []struct {
 		PathInGraph string

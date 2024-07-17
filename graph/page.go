@@ -2,6 +2,7 @@ package graph
 
 import (
 	"fmt"
+	"regexp"
 )
 
 type Page struct {
@@ -31,6 +32,13 @@ func (p *Page) Aliases() []string {
 	}
 
 	return aliasesProp.List()
+}
+
+// IsJournal returns true if the page name looks like a journal entry.
+func (p *Page) IsJournal() bool {
+	dateRe := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+	return dateRe.MatchString(p.Name)
 }
 
 // IsPlaceholder returns true if the page is not a file on disk.
@@ -64,6 +72,14 @@ func (p *Page) Properties() *PropertyMap {
 	return p.Root.Properties
 }
 
+// RequestsHoistedNamespace returns true if page properties specify hoisting.
+func (p *Page) RequestsHoistedNamespace() bool {
+	hoistProp, ok := p.Root.Properties.Get("hoist-namespace")
+
+	return ok && hoistProp.Bool()
+}
+
+// String returns a string representation of the page.
 func (p *Page) String() string {
 	return fmt.Sprintf("<Page: %s>", p.Name)
 }

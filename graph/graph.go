@@ -7,17 +7,19 @@ import (
 )
 
 type Graph struct {
-	GraphDir string
-	Pages    map[string]*Page  `json:"pages"`
-	Blocks   map[string]*Block `json:"-"`
-	Assets   map[string]*Asset `json:"assets"`
+	GraphDir          string
+	HoistedNamespaces []string
+	Pages             map[string]*Page  `json:"pages"`
+	Blocks            map[string]*Block `json:"-"`
+	Assets            map[string]*Asset `json:"assets"`
 }
 
 func NewGraph() Graph {
 	return Graph{
-		Pages:  map[string]*Page{},
-		Assets: map[string]*Asset{},
-		Blocks: map[string]*Block{},
+		Pages:             map[string]*Page{},
+		Assets:            map[string]*Asset{},
+		Blocks:            map[string]*Block{},
+		HoistedNamespaces: []string{},
 	}
 }
 
@@ -51,7 +53,22 @@ func (g *Graph) AddPage(page *Page) error {
 		g.Blocks[block.ID] = block
 	}
 
+	if page.RequestsHoistedNamespace() {
+		g.HoistedNamespaces = append(g.HoistedNamespaces, page.Name)
+	}
+
 	return nil
+}
+
+// PageIsHoisted returns true if the page is in a hoisted namespace.
+func (g *Graph) PageIsHoisted(page *Page) bool {
+	for _, ns := range g.HoistedNamespaces {
+		if page.Name == ns || strings.HasPrefix(page.Name, ns+"/") {
+			return true
+		}
+	}
+
+	return false
 }
 
 // FindAsset returns an asset by path.

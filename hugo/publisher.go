@@ -344,6 +344,8 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	dateProp, ok := page.Root.Properties.Get("date")
 	if ok {
 		date = dateProp.String()
+	} else if page.IsJournal() {
+		date = page.Name
 	}
 
 	bannerProp, ok := page.Root.Properties.Get("banner")
@@ -398,15 +400,19 @@ func (e *Exporter) SetPagePermalinks() map[string]string {
 	permalinks := map[string]string{}
 
 	for _, page := range e.Graph.Pages {
-		section := "pages"
-		dateRe := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
-
-		if dateRe.MatchString(page.Name) {
-			section = "journals"
-		}
-
 		nameSteps := strings.Split(page.Name, "/")
-		slugSteps := []string{section}
+		slugSteps := []string{}
+
+		if !e.Graph.PageIsHoisted(page) {
+			section := "pages"
+			dateRe := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+			if dateRe.MatchString(page.Name) {
+				section = "journals"
+			}
+
+			slugSteps = append(slugSteps, section)
+		}
 
 		for _, step := range nameSteps {
 			slugSteps = append(slugSteps, slug.Make(step))
