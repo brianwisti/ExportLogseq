@@ -2,6 +2,7 @@ package graph
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -110,6 +111,19 @@ func (b *Block) IsPublic() bool {
 // Links returns all links found in the block.
 func (b *Block) Links() []Link {
 	links := []Link{}
+
+	banner, ok := b.Properties.Get("banner")
+
+	if ok {
+		links = append(links, Link{
+			Raw:       "",
+			LinksFrom: b.String(),
+			LinkPath:  filepath.Base(banner.Value),
+			LinkType:  LinkTypeAsset,
+			IsEmbed:   true,
+			Label:     "",
+		})
+	}
 
 	for _, link := range b.Content.Links {
 		links = append(links, link)

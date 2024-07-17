@@ -80,7 +80,7 @@ func (e *Exporter) ExportAssets() error {
 
 	for _, asset := range e.Graph.Assets {
 		wg.Add(1)
-		log.Info("Exporting asset " + asset.Name)
+		log.Debug("Exporting asset " + asset.Name)
 
 		go func(wg *sync.WaitGroup, asset graph.Asset) {
 			defer wg.Done()
@@ -101,8 +101,10 @@ func (e *Exporter) ExportAssets() error {
 
 	for err := range errCh {
 		log.Info("Checking for errors in asset export")
+
 		if err != nil {
 			exportOk = false
+
 			log.Error("Error exporting assets: ", err)
 		}
 	}
@@ -111,7 +113,6 @@ func (e *Exporter) ExportAssets() error {
 		return errors.New("error exporting assets")
 	}
 
-	log.Info("Exported assets")
 	return nil
 }
 
@@ -189,15 +190,20 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 		return "", nil
 	}
 
-	blockContent := block.Content.Markdown
+	blockContent := ""
 
-	// process page links
-	for _, link := range block.Links() {
-		replacement := e.ProcessBlockLink(link)
-		blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
+	if block.Depth > 0 {
+		// root block technically has no content. Only process children.
+		blockContent = block.Content.Markdown
+		// process page links
+		for _, link := range block.Links() {
+			replacement := e.ProcessBlockLink(link)
+			blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
+		}
+
+		blockContent = strings.Replace(blockContent, "{{<", "{{/**/<", -1)
 	}
 
-	blockContent = strings.Replace(blockContent, "{{<", "{{/**/<", -1)
 	shortcodeArgs := map[string]string{}
 
 	shortcodeArgs["id"] = block.ID
@@ -264,8 +270,6 @@ func UnavailableLink(label string) string {
 func (e *Exporter) ExportLinkedAsset(asset graph.Asset) error {
 	targetPath := e.PublishedAssetPath(asset.Name)
 	sourcePath := filepath.Join(e.Graph.GraphDir, "assets", asset.PathInGraph)
-	targetDir := filepath.Dir(targetPath)
-	log.Info("Exporting asset:", sourcePath, "→", targetDir)
 
 	log.Debugf("Exporting asset: %s → %s", sourcePath, targetPath)
 	// Copy the file at sourcePath to targetPath
@@ -338,6 +342,7 @@ func (e *Exporter) exportPage(page graph.Page) error {
 func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	date := ""
 	backlinks := []string{}
+	banner := ""
 
 	for _, link := range e.Graph.FindLinksToPage(&page) {
 		blockID := link.LinksFrom
@@ -370,14 +375,27 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 		date = dateProp.String()
 	}
 
+	bannerProp, ok := page.Root.Properties.Get("banner")
+	if ok {
+		bannerPath := strings.TrimPrefix(bannerProp.String(), "../assets/")
+		log.Debug("Found banner property: ", bannerPath)
+
+		banner, ok = e.AssetPermalink(bannerPath)
+		if !ok {
+			log.Warn("No permalink found for banner asset: ", bannerPath)
+		}
+	}
+
 	frontmatter := struct {
 		Title     string   `json:"title"`
-		Date      string   `json:"date"`
+		Date      string   `json:"date,omitempty"`
 		Backlinks []string `json:"backlinks"`
+		Banner    string   `json:"banner,omitempty"`
 	}{
 		Title:     page.Title,
 		Date:      date,
 		Backlinks: backlinks,
+		Banner:    banner,
 	}
 
 	// encode the frontmatter to JSON
