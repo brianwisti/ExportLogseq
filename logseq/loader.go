@@ -157,11 +157,16 @@ func (loader *Loader) loadPagesFromDir(subdir string) error {
 	}
 
 	wg := new(sync.WaitGroup)
-	wg.Add(len(pageFiles))
 	pageCh := make(chan graph.Page, len(pageFiles))
 	errCh := make(chan error, 1)
 
 	for _, pageFile := range pageFiles {
+		if filepath.Base(pageFile) == "Templates.md" {
+			continue
+		}
+
+		wg.Add(1)
+
 		go func(wg *sync.WaitGroup, pageFile string) {
 			defer wg.Done()
 

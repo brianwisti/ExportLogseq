@@ -72,12 +72,12 @@ func (p *Page) String() string {
 func (p *Page) SetRoot(root *Block) {
 	p.Root = root
 	p.AllBlocks = []*Block{}
-	p.addTree(root)
+	p.AddTree(root)
 }
 
-func (p *Page) addTree(block *Block) {
+func (p *Page) AddTree(block *Block) {
 	p.AllBlocks = append(p.AllBlocks, block)
 	for _, child := range block.Children {
-		p.addTree(child)
+		p.AddTree(child)
 	}
 }

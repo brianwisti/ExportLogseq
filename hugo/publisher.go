@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -75,42 +76,12 @@ func (e *Exporter) ExportAssets() error {
 		return errors.Wrap(err, "creating asset directory "+e.AssetDir)
 	}
 
-	wg := new(sync.WaitGroup)
-	errCh := make(chan error)
-
 	for _, asset := range e.Graph.Assets {
-		wg.Add(1)
 		log.Debug("Exporting asset " + asset.Name)
 
-		go func(wg *sync.WaitGroup, asset graph.Asset) {
-			defer wg.Done()
-
-			if err := e.ExportLinkedAsset(asset); err != nil {
-				log.Errorf("Error exporting asset %s: %v", asset.Name, err)
-				errCh <- errors.Wrap(err, "exporting asset")
-
-				return
-			}
-		}(wg, *asset)
-	}
-
-	wg.Wait()
-	close(errCh)
-
-	exportOk := true
-
-	for err := range errCh {
-		log.Info("Checking for errors in asset export")
-
-		if err != nil {
-			exportOk = false
-
-			log.Error("Error exporting assets: ", err)
+		if err := e.ExportLinkedAsset(*asset); err != nil {
+			return errors.Wrap(err, "exporting asset "+asset.Name)
 		}
-	}
-
-	if !exportOk {
-		return errors.New("error exporting assets")
 	}
 
 	return nil
@@ -427,8 +398,15 @@ func (e *Exporter) SetPagePermalinks() map[string]string {
 	permalinks := map[string]string{}
 
 	for _, page := range e.Graph.Pages {
+		section := "pages"
+		dateRe := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+		if dateRe.MatchString(page.Name) {
+			section = "journals"
+		}
+
 		nameSteps := strings.Split(page.Name, "/")
-		slugSteps := []string{}
+		slugSteps := []string{section}
 
 		for _, step := range nameSteps {
 			slugSteps = append(slugSteps, slug.Make(step))
