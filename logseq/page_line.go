@@ -2,7 +2,7 @@ package logseq
 
 import (
 	"bufio"
-	"os"
+	"io"
 	"strings"
 	"unicode/utf8"
 
@@ -14,20 +14,26 @@ type PageLine struct {
 	Indent  int
 }
 
-func LoadPageLines(file *os.File) ([]PageLine, error) {
+// NewPageLine creates a new PageLine from a string.
+func NewPageLine(line string) PageLine {
+	fullLength := utf8.RuneCountInString(line)
+	lineContent := strings.TrimLeft(line, "\t")
+	indent := fullLength - utf8.RuneCountInString(lineContent)
+
+	return PageLine{
+		Content: lineContent,
+		Indent:  indent,
+	}
+}
+
+func LoadPageLines(r io.Reader) ([]PageLine, error) {
 	var lines []PageLine
 
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(r)
 
 	for scanner.Scan() {
-		line := scanner.Text()
-		fullLength := utf8.RuneCountInString(line)
-		lineContent := strings.TrimLeft(line, "\t")
-		indent := fullLength - utf8.RuneCountInString(lineContent)
-		lines = append(lines, PageLine{
-			Content: lineContent,
-			Indent:  indent,
-		})
+		pageLine := NewPageLine(scanner.Text())
+		lines = append(lines, pageLine)
 	}
 
 	if err := scanner.Err(); err != nil {
