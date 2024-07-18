@@ -135,3 +135,17 @@ func (b *Block) Links() []Link {
 func (b *Block) String() string {
 	return fmt.Sprintf("%s#%s", b.PageName, b.ID)
 }
+
+func (b *Block) SetProperty(name, value string) {
+	b.Properties.Set(name, value)
+}
+
+func (b *Block) Tags() []string {
+	tagsProp, ok := b.Properties.Get("tags")
+
+	if !ok {
+		return []string{}
+	}
+
+	return tagsProp.List()
+}

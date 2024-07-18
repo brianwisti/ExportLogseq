@@ -113,3 +113,23 @@ func TestBlock_Links_Empty(t *testing.T) {
 	assert.NotNil(t, links)
 	assert.Empty(t, links)
 }
+
+func TestBlock_SetProperty(t *testing.T) {
+	block := graph.NewEmptyBlock()
+	propName := gofakeit.Word()
+	propValue := gofakeit.Word()
+	block.SetProperty(propName, propValue)
+
+	prop, ok := block.Properties.Get(propName)
+
+	assert.True(t, ok)
+	assert.Equal(t, prop.Value, propValue)
+}
+
+func TestBlock_Tags(t *testing.T) {
+	block := graph.NewEmptyBlock()
+	tag := gofakeit.Word()
+	block.SetProperty("tags", tag)
+
+	assert.Contains(t, block.Tags(), tag)
+}

@@ -41,13 +41,30 @@ func (g *Graph) AddAsset(asset *Asset) error {
 // Add a single page to the graph.
 func (g *Graph) AddPage(page *Page) error {
 	pageKey := strings.ToLower(page.Name)
-	_, pageExists := g.Pages[pageKey]
+	existingPage, _ := g.Pages[pageKey]
 
-	if pageExists {
-		return PageExistsError{page.Name}
+	if existingPage != nil {
+		if existingPage.IsPlaceholder() {
+			log.Debug("Replacing placeholder page: ", page.Name)
+		} else {
+			return PageExistsError{page.Name}
+		}
 	}
 
 	g.Pages[pageKey] = page
+
+	for _, tag := range page.Tags() {
+		tagKey := strings.ToLower(tag)
+		_, ok := g.Pages[tagKey]
+
+		if !ok {
+			tagPage := NewEmptyPage()
+			tagPage.Name = tag
+			tagPage.Root.Properties.Set("public", "true")
+			log.Debug("Adding public tag page: ", tag)
+			g.AddPage(&tagPage)
+		}
+	}
 
 	for _, block := range page.AllBlocks {
 		g.Blocks[block.ID] = block
@@ -58,6 +75,23 @@ func (g *Graph) AddPage(page *Page) error {
 	}
 
 	return nil
+}
+
+// AddPlaceholderPage adds a placeholder page to the graph.
+// Placeholder pages are used to represent pages that do not exist in the graph.
+func (g *Graph) AddPlaceholderPage(name string) (*Page, error) {
+	pageKey := strings.ToLower(name)
+	_, pageExists := g.Pages[pageKey]
+
+	if pageExists {
+		return nil, PageExistsError{name}
+	}
+
+	page := NewEmptyPage()
+	page.Name = name
+	page.Root.Properties.Set("public", "true")
+
+	return &page, g.AddPage(&page)
 }
 
 // PageIsHoisted returns true if the page is in a hoisted namespace.

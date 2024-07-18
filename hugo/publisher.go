@@ -314,6 +314,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	date := ""
 	backlinks := []string{}
 	banner := ""
+	tagList := []string{}
 
 	for _, link := range e.Graph.FindLinksToPage(&page) {
 		blockID := link.LinksFrom
@@ -341,6 +342,27 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 		backlinks = append(backlinks, backlink)
 	}
 
+	tagsProp, ok := page.Root.Properties.Get("tags")
+	if ok {
+		tags := tagsProp.List()
+
+		log.Debug("Found tags property: ", tags)
+
+		for _, tag := range tags {
+			tagKey := strings.ToLower(tag)
+			tagPermalink, ok := e.PagePermalink(tagKey)
+
+			if !ok {
+				log.Warn("No permalink found for tag: ", tag)
+
+				continue
+			}
+
+			tagLink := "[" + tag + "](" + tagPermalink + ")"
+			tagList = append(tagList, tagLink)
+		}
+	}
+
 	dateProp, ok := page.Root.Properties.Get("date")
 	if ok {
 		date = dateProp.String()
@@ -362,12 +384,14 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	frontmatter := struct {
 		Title     string   `json:"title"`
 		Date      string   `json:"date,omitempty"`
-		Backlinks []string `json:"backlinks"`
+		Backlinks []string `json:"backlinks,omitempty"`
+		Tags      []string `json:"tags,omitempty"`
 		Banner    string   `json:"banner,omitempty"`
 	}{
 		Title:     page.Title,
 		Date:      date,
 		Backlinks: backlinks,
+		Tags:      tagList,
 		Banner:    banner,
 	}
 

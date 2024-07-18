@@ -61,11 +61,60 @@ func TestGraph_AddPage_WithExistingPage(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
+	page.PathInGraph = page.Name
 	_ = g.AddPage(&page)
 	err := g.AddPage(&page)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.ErrorIs(t, err, graph.PageExistsError{PageName: page.Name})
+}
+
+func TestGraph_AddPage_WithTags(t *testing.T) {
+	g := graph.NewGraph()
+	page := graph.NewEmptyPage()
+	page.Name = gofakeit.Word()
+	tag := gofakeit.Word()
+	page.Root.Properties.Set("tags", tag)
+	err := g.AddPage(&page)
+
+	assert.NoError(t, err)
+
+	tagPage, err := g.FindPage(tag)
+
+	assert.NoError(t, err)
+	assert.Equal(t, tagPage.Name, tag)
+}
+
+func TestGraph_AddPlaceholderPage(t *testing.T) {
+	g := graph.NewGraph()
+	placeholderName := gofakeit.Word()
+	placeholder, err := g.AddPlaceholderPage(placeholderName)
+
+	assert.NoError(t, err)
+
+	addedPage, err := g.FindPage(placeholderName)
+
+	assert.NoError(t, err)
+	assert.Equal(t, addedPage, placeholder)
+}
+
+func TestGraph_AddPage_WhenPlaceholderExists(t *testing.T) {
+	g := graph.NewGraph()
+	placeholderName := gofakeit.Word()
+	g.AddPlaceholderPage(placeholderName)
+
+	realPage := graph.NewEmptyPage()
+	realPage.Name = placeholderName
+	realPage.PathInGraph = placeholderName
+
+	err := g.AddPage(&realPage)
+
+	assert.NoError(t, err)
+
+	addedPage, err := g.FindPage(placeholderName)
+
+	assert.NoError(t, err)
+	assert.Equal(t, addedPage, &realPage)
 }
 
 func TestGraph_FindAsset(t *testing.T) {

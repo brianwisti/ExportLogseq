@@ -97,3 +97,8 @@ func (p *Page) AddTree(block *Block) {
 		p.AddTree(child)
 	}
 }
+
+// Tags returns tag properties defined for the page.
+func (p *Page) Tags() []string {
+	return p.Root.Tags()
+}

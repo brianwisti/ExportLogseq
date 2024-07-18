@@ -158,3 +158,12 @@ func TestPage_SetRoot_WithChildren(t *testing.T) {
 	assert.Contains(t, page.AllBlocks, root)
 	assert.Contains(t, page.AllBlocks, child)
 }
+
+func TestPage_Tags(t *testing.T) {
+	page := graph.NewEmptyPage()
+	tag := gofakeit.Word()
+	page.Root.Properties.Set("tags", tag)
+	tags := page.Tags()
+
+	assert.Contains(t, tags, tag)
+}
