@@ -11,7 +11,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3
 )
 
 require (

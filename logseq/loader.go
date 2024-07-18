@@ -38,11 +38,6 @@ func LoadGraph(graphDir string) (graph.Graph, error) {
 	log.Info("Loading Logseq graph from", graphDir)
 	loader := NewLoader(graphDir)
 
-	configFile := filepath.Join(graphDir, "logseq", "config.edn")
-	if err := CheckConfig(configFile); err != nil {
-		return loader.Graph, errors.Wrap(err, "loading Logseq config")
-	}
-
 	if err := loader.loadAssets(); err != nil {
 		return loader.Graph, errors.Wrap(err, "loading assets")
 	}
