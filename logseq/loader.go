@@ -202,7 +202,7 @@ func (loader *Loader) loadPagesFromDir(subdir string) error {
 
 func findBlocks(page *graph.Page, lines []PageLine) ([]*graph.Block, error) {
 	blocks := []*graph.Block{}
-	blockStack := &BlockStack{}
+	blockStack := NewBlockStack()
 	currentBlockLines := []string{}
 	currentIndent := 0
 
