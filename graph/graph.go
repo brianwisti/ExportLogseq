@@ -131,6 +131,29 @@ func (g *Graph) FindLinksToPage(page *Page) []Link {
 	return links
 }
 
+// FindTagLinksToPage returns all tag links to a Page.
+func (g *Graph) FindTagLinksToPage(page *Page) []Link {
+	log.Debug("Finding tag links in graph to: ", page)
+
+	links := []Link{}
+
+	for _, link := range g.Links() {
+		if link.LinkType != LinkTypeTag {
+			continue
+		}
+
+		linkTarget := link.LinkPath
+		log.Debug("Checking link from ", link.LinksFrom, " to ", linkTarget)
+
+		if page.Name == linkTarget {
+			log.Debug("Found link to ", page.Name, " in ", link.LinksFrom)
+			links = append(links, link)
+		}
+	}
+
+	return links
+}
+
 // FindPage returns a page by name or alias.
 func (g *Graph) FindPage(name string) (*Page, error) {
 	pageKey := strings.ToLower(name)

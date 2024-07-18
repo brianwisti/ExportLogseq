@@ -6,6 +6,7 @@ const (
 	LinkTypeAsset    LinkType = "asset"
 	LinkTypePage     LinkType = "page"
 	LinkTypeResource LinkType = "resource"
+	LinkTypeTag      LinkType = "tag"
 	LinkTypeBlock    LinkType = "block"
 )
 

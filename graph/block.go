@@ -125,6 +125,17 @@ func (b *Block) Links() []Link {
 		})
 	}
 
+	for _, tag := range b.Tags() {
+		links = append(links, Link{
+			Raw:       "",
+			LinksFrom: b.ID,
+			LinkPath:  tag,
+			LinkType:  LinkTypeTag,
+			IsEmbed:   false,
+			Label:     tag,
+		})
+	}
+
 	for _, link := range b.Content.Links {
 		links = append(links, link)
 	}
