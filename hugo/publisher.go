@@ -155,12 +155,6 @@ func (e *Exporter) ExportPages() error {
 func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	log.Debug("Processing block ", block.ID)
 
-	if !block.IsPublic() {
-		log.Debug("Skipping non-public block ", block.ID)
-
-		return "", nil
-	}
-
 	blockContent := ""
 
 	if block.Depth > 0 {

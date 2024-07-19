@@ -91,6 +91,7 @@ func (p *Page) SetRoot(root *Block) {
 	p.AddTree(root)
 }
 
+// AddTree adds a block and its children to the page's AllBlocks.
 func (p *Page) AddTree(block *Block) {
 	p.AllBlocks = append(p.AllBlocks, block)
 	for _, child := range block.Children {
