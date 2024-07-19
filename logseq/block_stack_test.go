@@ -77,3 +77,44 @@ func TestBlockStack_IsEmpty_False(t *testing.T) {
 
 	assert.False(t, bs.IsEmpty())
 }
+
+func TestBlockStack_PlaceBlock(t *testing.T) {
+	bs := logseq.NewBlockStack()
+	b := graph.NewEmptyBlock()
+
+	bs = logseq.PlaceBlock(b, bs)
+
+	assert.Contains(t, bs.Blocks, b)
+}
+
+func TestBlockStack_PlaceBlock_WithParent(t *testing.T) {
+	bs := logseq.NewBlockStack()
+	parent := graph.NewEmptyBlock()
+	bs = logseq.PlaceBlock(parent, bs)
+
+	b := graph.NewEmptyBlock()
+	b.Depth = 1
+
+	logseq.PlaceBlock(b, bs)
+
+	assert.Contains(t, parent.Children, b)
+}
+
+func TestBlockStack_PlaceBlock_WithNewBranch(t *testing.T) {
+	bs := logseq.NewBlockStack()
+	parent := graph.NewEmptyBlock()
+	bs = logseq.PlaceBlock(parent, bs)
+
+	b := graph.NewEmptyBlock()
+	b.Depth = 1
+
+	bs = logseq.PlaceBlock(b, bs)
+
+	child := graph.NewEmptyBlock()
+	child.Depth = 1
+
+	logseq.PlaceBlock(child, bs)
+
+	assert.Equal(t, child, bs.Top())
+	assert.Equal(t, 2, len(bs.Blocks))
+}

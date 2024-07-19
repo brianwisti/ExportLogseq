@@ -2,6 +2,8 @@ package logseq
 
 import (
 	"export-logseq/graph"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // BlockStack helps track blocks being loaded from a page file.
@@ -46,4 +48,24 @@ func (bs *BlockStack) Pop() *graph.Block {
 	bs.Blocks = bs.Blocks[:lastIndex]
 
 	return top
+}
+
+func PlaceBlock(block *graph.Block, blockStack *BlockStack) *BlockStack {
+	if block.Depth == 0 {
+		blockStack.Push(block)
+	} else {
+		for topBlock := blockStack.Top(); topBlock != nil; topBlock = blockStack.Top() {
+			if topBlock.Depth < block.Depth {
+				topBlock.AddChild(block)
+				log.Debug("Top block: ", topBlock)
+				blockStack.Push(block)
+
+				break
+			}
+
+			blockStack.Pop()
+		}
+	}
+
+	return blockStack
 }
