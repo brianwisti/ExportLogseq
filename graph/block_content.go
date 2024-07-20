@@ -125,7 +125,7 @@ func (bc *BlockContent) findTagLinks() error {
 	for _, match := range tagLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
 		raw, tagName := match[0], match[1]
 
-		log.Infof("Found tag link: [%s] -> %s", raw, tagName)
+		log.Debugf("Found tag link: [%s] -> %s", raw, tagName)
 
 		link := Link{
 			Raw:       raw,

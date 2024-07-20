@@ -205,10 +205,18 @@ func (e *Exporter) exportPage(page graph.Page) error {
 func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	log.Debug("Processing block ", block.ID)
 
-	if e.RequirePublic && !block.IsPublic() {
-		log.Warn("Skipping non-public block: ", block.String())
+	if e.RequirePublic {
+		if !block.IsPublic() {
+			log.Warn("Skipping non-public block: ", block.String())
 
-		return "", nil
+			return "", nil
+		}
+
+		if block.IsTask() {
+			log.Warn("Skipping task block from public view: ", block.String())
+
+			return "", nil
+		}
 	}
 
 	blockContent := ""
@@ -216,7 +224,12 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	if block.Depth > 0 {
 		// root block technically has no content. Only process children.
 		blockContent = block.Content.Markdown
-		blockContent = strings.Replace(blockContent, "{{<", "{{/**/<", -1)
+
+		if block.Content.IsCodeBlock() {
+			blockContent = strings.Replace(blockContent, "{{<", "{{/**/<", -1)
+		} else {
+			blockContent = e.ProcessBlockEmbeddedShortcodes(blockContent)
+		}
 
 		// process page links
 		for _, link := range block.Links() {
@@ -293,6 +306,23 @@ func (e *Exporter) ProcessBlockLink(link graph.Link) string {
 	}
 
 	return link.Label
+}
+
+func (e *Exporter) ProcessBlockEmbeddedShortcodes(blockContent string) string {
+	// ex: {{video https://www.youtube.com/watch?v=0Uc3ZrmhDN4}}
+	videoRe := regexp.MustCompile(`\{\{video https://www\.youtube\.com/watch\?v=([^}]+)\}\}`)
+
+	embeddedVideo := `<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+	<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="allowfullscreen" loading="eager" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/$1?autoplay=0&controls=1&end=0&loop=0&mute=0&start=0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" title="YouTube video"
+	></iframe>
+	</div>`
+	blockContent = videoRe.ReplaceAllString(blockContent, embeddedVideo)
+
+	// ex: {{renderer :linkpreview,https://golangci-lint.run/usage/configuration/}}
+	linkPreviewRe := regexp.MustCompile(`\{\{renderer :linkpreview,([^}]+)\}\}`)
+	blockContent = linkPreviewRe.ReplaceAllString(blockContent, "$1")
+
+	return blockContent
 }
 
 // UnavailableLink returns a string used to indicate a missing link.

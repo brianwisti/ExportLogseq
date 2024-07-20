@@ -108,6 +108,12 @@ func (b *Block) IsPublic() bool {
 	return false
 }
 
+func (b *Block) IsTask() bool {
+	taskRe := regexp.MustCompile(`^(?:NOW|LATER|TODO|DONE|CANCELED|WAITING)\s`)
+
+	return taskRe.MatchString(b.Content.Markdown)
+}
+
 // Links returns all links found in the block.
 func (b *Block) Links() []Link {
 	links := []Link{}
