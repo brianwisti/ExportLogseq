@@ -63,7 +63,7 @@ func (bc *BlockContent) FindLink(path string) (Link, bool) {
 }
 
 func (bc *BlockContent) IsCodeBlock() bool {
-	codeBlockRe := regexp.MustCompile("```")
+	codeBlockRe := regexp.MustCompile("(?:```|<pre)")
 
 	return codeBlockRe.MatchString(bc.Markdown)
 }
@@ -114,6 +114,36 @@ func (bc *BlockContent) findLinks() error {
 
 	if err := bc.findTagLinks(); err != nil {
 		return errors.Wrap(err, "finding tag links")
+	}
+
+	if err := bc.findBlockLinks(); err != nil {
+		return errors.Wrap(err, "finding block links")
+	}
+
+	return nil
+}
+
+// findBlockLinks finds block links in the block content.
+func (bc *BlockContent) findBlockLinks() error {
+	blockLinkRe := regexp.MustCompile(`\(\((.+?)\)\)`)
+
+	for _, match := range blockLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
+		raw, blockID := match[0], match[1]
+		log.Infof("Found block link: [%s] -> %s", raw, blockID)
+
+		link := Link{
+			Raw:       raw,
+			LinksFrom: bc.BlockID,
+			LinkPath:  blockID,
+			Label:     blockID,
+			LinkType:  LinkTypeBlock,
+			IsEmbed:   false,
+		}
+
+		_, err := bc.AddLink(link)
+		if err != nil {
+			return errors.Wrap(err, "adding block link")
+		}
 	}
 
 	return nil

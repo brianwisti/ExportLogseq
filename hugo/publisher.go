@@ -284,6 +284,20 @@ func (e *Exporter) ProcessBlockLink(link graph.Link) string {
 		return UnavailableLink(link.Label)
 	}
 
+	if link.LinkType == graph.LinkTypeBlock {
+		targetBlock, ok := e.Graph.Blocks[link.LinkPath]
+		if !ok {
+			log.Warn("Block not found for link: ", link.LinkPath)
+
+			return UnavailableLink(link.Label)
+		}
+
+		blockContent := targetBlock.Content.Markdown
+		permalink := e.BlockPermalink(*targetBlock)
+
+		return `{{< block-link link="` + permalink + `" >}}` + blockContent + "{{< /block-link >}}"
+	}
+
 	if link.LinkType == graph.LinkTypeTag {
 		permalink, ok := e.PagePermalink(link.LinkPath)
 		if ok {
@@ -572,6 +586,19 @@ func (e *Exporter) PagePermalink(pageName string) (string, bool) {
 	}
 
 	return "/" + permalink, ok
+}
+
+// BlockPermalink determines the permalink for a Block.
+func (e *Exporter) BlockPermalink(block graph.Block) string {
+	pagePermalink, ok := e.PagePermalink(block.PageName)
+
+	if !ok {
+		log.Warn("No permalink found for block page: ", block.PageName)
+
+		return ""
+	}
+
+	return pagePermalink + "#" + block.ID
 }
 
 // PageContentPath determines the content file path for a Page.
