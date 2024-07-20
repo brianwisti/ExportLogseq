@@ -100,8 +100,12 @@ func (g *Graph) AddPlaceholderPage(name string) (*Page, error) {
 	}
 
 	page := NewEmptyPage()
+	nameSteps := strings.Split(name, "/")
+	title := nameSteps[len(nameSteps)-1]
+
 	page.Name = name
-	page.Title = name
+	page.Title = title
+
 	page.Root.Properties.Set("public", "true")
 
 	return &page, g.AddPage(&page)
