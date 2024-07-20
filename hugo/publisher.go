@@ -479,8 +479,14 @@ func (e *Exporter) SetAssetPermalinks() map[string]string {
 // SetPagePermalinks builds a map of page names to permalinks.
 func (e *Exporter) SetPagePermalinks() map[string]string {
 	permalinks := map[string]string{}
+	// Contents is a special case, serving as site root
+	permalinks["contents"] = "/"
 
 	for _, page := range e.Graph.Pages {
+		if page.Name == "Contents" {
+			continue
+		}
+
 		nameSteps := strings.Split(page.Name, "/")
 		slugSteps := []string{}
 
@@ -527,6 +533,7 @@ func (e *Exporter) AssetPermalink(assetName string) (string, bool) {
 
 // PagePermalink determines the permalink for a Page.
 func (e *Exporter) PagePermalink(pageName string) (string, bool) {
+
 	nameKey := strings.ToLower(pageName)
 	permalink, ok := e.PagePermalinks[nameKey]
 
@@ -539,9 +546,15 @@ func (e *Exporter) PagePermalink(pageName string) (string, bool) {
 
 // PageContentPath determines the content file path for a Page.
 func (e *Exporter) PageContentPath(page graph.Page) string {
+
+	if page.Name == "contents" {
+		return filepath.Join(e.ContentDir, "_index.md")
+	}
+
 	permalink, ok := e.PagePermalink(page.Name)
 	if !ok {
 		log.Fatalf("No permalink found for page: %s", page.Name)
+
 	}
 
 	// Determine the target path for the page.
@@ -551,7 +564,7 @@ func (e *Exporter) PageContentPath(page graph.Page) string {
 	// Find pages in the page's namespace
 	subpages := e.Graph.PagesInNamespace(page.Name)
 
-	if len(subpages) > 0 {
+	if len(subpages) > 0 || permalink == "/" {
 		pageSubtree = append(pageSubtree, "_index")
 	}
 
