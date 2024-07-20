@@ -81,6 +81,10 @@ func (b *Block) AddChild(child *Block) {
 	child.Parent = b
 }
 
+func (b *Block) Callout() string {
+	return b.Content.Callout
+}
+
 func (b *Block) InContext(g Graph) (string, error) {
 	if b.PageName == "" {
 		return "Setting block context", fmt.Errorf("Block %s has no page name", b.ID)

@@ -247,6 +247,11 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 		shortcodeArgs["caption"] = strings.Replace(captionProp.Value, "\"", "\\\"", -1)
 	}
 
+	callout := block.Callout()
+	if callout != "" {
+		shortcodeArgs["callout"] = callout
+	}
+
 	shortCode := "block"
 
 	for arg, value := range shortcodeArgs {
