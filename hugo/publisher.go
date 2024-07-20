@@ -160,13 +160,14 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	if block.Depth > 0 {
 		// root block technically has no content. Only process children.
 		blockContent = block.Content.Markdown
+		blockContent = strings.Replace(blockContent, "{{<", "{{/**/<", -1)
+
 		// process page links
 		for _, link := range block.Links() {
 			replacement := e.ProcessBlockLink(link)
 			blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
 		}
 
-		blockContent = strings.Replace(blockContent, "{{<", "{{/**/<", -1)
 	}
 
 	shortcodeArgs := map[string]string{}
@@ -210,6 +211,18 @@ func (e *Exporter) ProcessBlockLink(link graph.Link) string {
 		permalink, ok := e.PagePermalink(link.LinkPath)
 		if ok {
 			return "[" + link.Label + "](" + permalink + ")"
+		}
+
+		return UnavailableLink(link.Label)
+	}
+
+	if link.LinkType == graph.LinkTypeTag {
+		permalink, ok := e.PagePermalink(link.LinkPath)
+		if ok {
+			// oops that space from identifying tags
+			shortCode := fmt.Sprintf(` {{< logseq/tag-link label="%s" link="%s" >}}`, link.Label, permalink)
+
+			return shortCode
 		}
 
 		return UnavailableLink(link.Label)

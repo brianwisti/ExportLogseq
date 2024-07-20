@@ -2,6 +2,7 @@ package logseq
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"strings"
 	"unicode/utf8"
@@ -41,4 +42,8 @@ func LoadPageLines(r io.Reader) ([]PageLine, error) {
 	}
 
 	return lines, nil
+}
+
+func (pl PageLine) String() string {
+	return fmt.Sprintf("<PageLine: Indent=%d; Content=%s>", pl.Indent, pl.Content)
 }

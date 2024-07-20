@@ -100,6 +100,10 @@ func (bc *BlockContent) SetMarkdown(markdown string) error {
 func (bc *BlockContent) findLinks() error {
 	log.Debug("Finding links in block ", bc.BlockID)
 
+	if bc.IsCodeBlock() {
+		return nil
+	}
+
 	if err := bc.findPageLinks(); err != nil {
 		return errors.Wrap(err, "finding page links")
 	}
@@ -108,15 +112,41 @@ func (bc *BlockContent) findLinks() error {
 		return errors.Wrap(err, "finding resource links")
 	}
 
+	if err := bc.findTagLinks(); err != nil {
+		return errors.Wrap(err, "finding tag links")
+	}
+
+	return nil
+}
+
+func (bc *BlockContent) findTagLinks() error {
+	tagLinkRe := regexp.MustCompile(`\s#([\w-]+)\b`)
+
+	for _, match := range tagLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
+		raw, tagName := match[0], match[1]
+
+		log.Infof("Found tag link: [%s] -> %s", raw, tagName)
+
+		link := Link{
+			Raw:       raw,
+			LinksFrom: bc.BlockID,
+			LinkPath:  tagName,
+			Label:     tagName,
+			LinkType:  LinkTypeTag,
+			IsEmbed:   false,
+		}
+		_, err := bc.AddLink(link)
+
+		if err != nil {
+			return errors.Wrap(err, "adding tag link")
+		}
+	}
+
 	return nil
 }
 
 func (bc *BlockContent) findPageLinks() error {
 	pageLinkRe := regexp.MustCompile(`\[\[(.+?)\]\]`)
-
-	if bc.IsCodeBlock() {
-		return nil
-	}
 
 	for _, match := range pageLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
 		raw, pageName := match[0], match[1]
