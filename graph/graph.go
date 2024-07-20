@@ -3,6 +3,7 @@ package graph
 import (
 	"strings"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,11 +59,22 @@ func (g *Graph) AddPage(page *Page) error {
 		_, ok := g.Pages[tagKey]
 
 		if !ok {
-			tagPage := NewEmptyPage()
-			tagPage.Name = tag
-			tagPage.Root.Properties.Set("public", "true")
-			log.Debug("Adding public tag page: ", tag)
-			g.AddPage(&tagPage)
+			_, err := g.AddPlaceholderPage(tag)
+			if err != nil {
+				return errors.Wrap(err, "adding tag page "+tag)
+			}
+		}
+	}
+
+	for _, tagLink := range page.TagLinks() {
+		tagKey := strings.ToLower(tagLink.LinkPath)
+		_, ok := g.Pages[tagKey]
+
+		if !ok {
+			_, err := g.AddPlaceholderPage(tagLink.LinkPath)
+			if err != nil {
+				return errors.Wrap(err, "adding tag page "+tagLink.LinkPath)
+			}
 		}
 	}
 
@@ -89,6 +101,7 @@ func (g *Graph) AddPlaceholderPage(name string) (*Page, error) {
 
 	page := NewEmptyPage()
 	page.Name = name
+	page.Title = name
 	page.Root.Properties.Set("public", "true")
 
 	return &page, g.AddPage(&page)

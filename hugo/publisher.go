@@ -345,7 +345,9 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 			continue
 		}
 
-		backlink := "[" + block.PageName + "](" + pagePermalink + ")"
+		permalink := pagePermalink + "#" + block.ID
+
+		backlink := "[" + block.PageName + "](" + permalink + ")"
 
 		backlinks = append(backlinks, backlink)
 	}

@@ -67,6 +67,32 @@ func (p *Page) Links() []Link {
 	return links
 }
 
+// PageLinks returns links to other pages in the page.
+func (p *Page) PageLinks() []Link {
+	links := []Link{}
+
+	for _, link := range p.Links() {
+		if link.IsPage() {
+			links = append(links, link)
+		}
+	}
+
+	return links
+}
+
+// TagLinks returns links to tags in the page.
+func (p *Page) TagLinks() []Link {
+	links := []Link{}
+
+	for _, link := range p.Links() {
+		if link.IsTag() {
+			links = append(links, link)
+		}
+	}
+
+	return links
+}
+
 // Properties returns the root block's properties.
 func (p *Page) Properties() *PropertyMap {
 	return p.Root.Properties

@@ -41,3 +41,8 @@ func (l *Link) IsPage() bool {
 func (l *Link) IsResource() bool {
 	return l.LinkType == LinkTypeResource
 }
+
+// IsTag returns true if the link is a tag link.
+func (l *Link) IsTag() bool {
+	return l.LinkType == LinkTypeTag
+}

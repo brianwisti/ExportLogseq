@@ -120,7 +120,7 @@ func (bc *BlockContent) findLinks() error {
 }
 
 func (bc *BlockContent) findTagLinks() error {
-	tagLinkRe := regexp.MustCompile(`\s#([\w-]+)\b`)
+	tagLinkRe := regexp.MustCompile(`(?:^|\s)#([a-zA-Z][\w/-]+)\b`)
 
 	for _, match := range tagLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
 		raw, tagName := match[0], match[1]
