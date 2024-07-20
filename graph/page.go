@@ -125,6 +125,19 @@ func (p *Page) AddTree(block *Block) {
 	}
 }
 
+// AddPublicTree adds a block and its public children to the page's AllBlocks.
+func (p *Page) AddPublicTree(block *Block) {
+	if !block.IsPublic() {
+		return
+	}
+
+	p.AllBlocks = append(p.AllBlocks, block)
+
+	for _, child := range block.Children {
+		p.AddPublicTree(child)
+	}
+}
+
 // Tags returns tag properties defined for the page.
 func (p *Page) Tags() []string {
 	return p.Root.Tags()

@@ -47,13 +47,8 @@ func (cmd *ExportCmd) Run() error {
 		return errors.Wrap(err, "loading graph")
 	}
 
-	if cmd.SelectedPages == PublicPages {
-		graph = graph.PublicGraph()
-	}
-
-	log.Infof("Graph has %d pages and %d assets", len(graph.Pages), len(graph.Assets))
-
-	if err := hugo.ExportGraph(graph, cmd.SiteDir); err != nil {
+	requirePublic := cmd.SelectedPages == PublicPages
+	if err := hugo.ExportGraph(graph, cmd.SiteDir, requirePublic); err != nil {
 		return errors.Wrap(err, "exporting graph")
 	}
 

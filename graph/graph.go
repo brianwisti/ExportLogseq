@@ -250,29 +250,6 @@ func (g *Graph) PublicGraph() Graph {
 	for _, page := range g.Pages {
 		if page.IsPublic() {
 			publicGraph.AddPage(page)
-			log.Debugf("Adding public page %s with %d links", page.Name, len(page.Links()))
-
-			continue
-		}
-
-		// Check for public children of page root, and add any to a new page.
-		publicPage := NewEmptyPage()
-		publicPage.Kind = page.Kind
-		publicPage.Title = page.Title
-		publicPage.Name = page.Name
-		publicPage.PathInGraph = page.PathInGraph
-
-		for _, block := range page.Root.Children {
-			if block.IsPublic() {
-				publicPage.Root.Children = append(publicPage.Root.Children, block)
-				publicPage.AddTree(block)
-			}
-		}
-
-		if len(publicPage.Root.Children) > 0 {
-			publicPage.Root.Properties.Set("public", "true")
-			publicGraph.AddPage(&publicPage)
-			log.Infof("Adding page %s with public blocks", publicPage.Name)
 		}
 	}
 

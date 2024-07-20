@@ -23,14 +23,24 @@ type Exporter struct {
 	ContentDir      string
 	PagePermalinks  map[string]string
 	AssetPermalinks map[string]string
+	RequirePublic   bool
 }
 
 const (
 	folderPermissions = 0755
 )
 
-func ExportGraph(graph graph.Graph, siteDir string) error {
+func ExportGraph(graph graph.Graph, siteDir string, requirePublic bool) error {
 	log.Infof("Exporting from %s to %s", graph.GraphDir, siteDir)
+
+	if requirePublic {
+		log.Info("Only exporting public blocks")
+
+		graph = graph.PublicGraph()
+	}
+
+	log.Infof("Graph has %d pages and %d assets", len(graph.Pages), len(graph.Assets))
+
 	exporter := Exporter{
 		Graph:           graph,
 		SiteDir:         siteDir,
@@ -38,6 +48,7 @@ func ExportGraph(graph graph.Graph, siteDir string) error {
 		ContentDir:      filepath.Join(siteDir, "content"),
 		PagePermalinks:  map[string]string{},
 		AssetPermalinks: map[string]string{},
+		RequirePublic:   requirePublic,
 	}
 
 	exporter.PagePermalinks = exporter.SetPagePermalinks()
@@ -151,9 +162,54 @@ func (e *Exporter) ExportPages() error {
 	return nil
 }
 
+func (e *Exporter) exportPage(page graph.Page) error {
+	log.Debug("Exporting page:", page.Name)
+
+	contentPath := e.PageContentPath(page)
+	pageFrontmatter := e.determinePageFrontmatter(page)
+	log.Debug("Page frontmatter:", pageFrontmatter)
+
+	pageContent, err := e.ProcessBlock(*page.Root)
+	if err != nil {
+		return errors.Wrap(err, "processing page content")
+	}
+
+	if pageContent == "" {
+		log.Warn("No content found for page: ", page.Name)
+	}
+
+	log.Debug("Page content:", pageContent)
+
+	pageContentFolder := filepath.Dir(contentPath)
+	if err := os.MkdirAll(pageContentFolder, folderPermissions); err != nil {
+		return errors.Wrap(err, "creating page content folder")
+	}
+
+	fileContent := fmt.Sprintf("---\n%s\n---\n%s", pageFrontmatter, pageContent)
+
+	file, err := os.Create(contentPath)
+	if err != nil {
+		return errors.Wrap(err, "creating content file")
+	}
+
+	defer file.Close()
+
+	if _, err := file.WriteString(fileContent); err != nil {
+		return errors.Wrap(err, "writing content to file")
+	}
+
+	return nil
+}
+
 // ProcessBlock turns a block and its children into Hugo content.
 func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	log.Debug("Processing block ", block.ID)
+
+	if e.RequirePublic && !block.IsPublic() {
+		log.Warn("Skipping non-public block: ", block.String())
+
+		return "", nil
+	}
 
 	blockContent := ""
 
@@ -167,7 +223,6 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 			replacement := e.ProcessBlockLink(link)
 			blockContent = strings.Replace(blockContent, link.Raw, replacement, -1)
 		}
-
 	}
 
 	shortcodeArgs := map[string]string{}
@@ -277,41 +332,6 @@ func (e *Exporter) ExportLinkedAsset(asset graph.Asset) error {
 
 	if _, err := io.Copy(target, source); err != nil {
 		return errors.Wrap(err, "copying file")
-	}
-
-	return nil
-}
-
-func (e *Exporter) exportPage(page graph.Page) error {
-	log.Debug("Exporting page:", page.Name)
-
-	contentPath := e.PageContentPath(page)
-	pageFrontmatter := e.determinePageFrontmatter(page)
-	log.Debug("Page frontmatter:", pageFrontmatter)
-
-	pageContent, err := e.ProcessBlock(*page.Root)
-	if err != nil {
-		return errors.Wrap(err, "processing page content")
-	}
-
-	log.Debug("Page content:", pageContent)
-
-	pageContentFolder := filepath.Dir(contentPath)
-	if err := os.MkdirAll(pageContentFolder, folderPermissions); err != nil {
-		return errors.Wrap(err, "creating page content folder")
-	}
-
-	fileContent := fmt.Sprintf("---\n%s\n---\n%s", pageFrontmatter, pageContent)
-
-	file, err := os.Create(contentPath)
-	if err != nil {
-		return errors.Wrap(err, "creating content file")
-	}
-
-	defer file.Close()
-
-	if _, err := file.WriteString(fileContent); err != nil {
-		return errors.Wrap(err, "writing content to file")
 	}
 
 	return nil
