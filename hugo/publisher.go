@@ -283,7 +283,7 @@ func (e *Exporter) ProcessBlockLink(link graph.Link) string {
 	if link.LinkType == graph.LinkTypePage {
 		permalink, ok := e.PagePermalink(link.LinkPath)
 		if ok {
-			return "[" + link.Label + "](" + permalink + ")"
+			return `{{< page-link link="` + permalink + `" >}}` + link.Label + "{{< /page-link >}}"
 		}
 
 		return UnavailableLink(link.Label)
@@ -639,6 +639,14 @@ func (e *Exporter) PublishedAssetPath(assetName string) string {
 }
 
 func (e *Exporter) shouldExportAsset(sourcePath string, targetPath string) (bool, error) {
+	fileExt := filepath.Ext(sourcePath)
+
+	if fileExt == ".pdf" {
+		log.Info("Skip PDF asset: ", sourcePath)
+
+		return false, nil
+	}
+
 	sourceFileStat, err := os.Stat(sourcePath)
 	if err != nil {
 		return false, errors.Wrap(err, "getting source file info")
