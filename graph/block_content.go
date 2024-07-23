@@ -129,7 +129,7 @@ func (bc *BlockContent) findBlockLinks() error {
 
 	for _, match := range blockLinkRe.FindAllStringSubmatch(bc.Markdown, -1) {
 		raw, blockID := match[0], match[1]
-		log.Infof("Found block link: [%s] -> %s", raw, blockID)
+		log.Debugf("Found block link: [%s] -> %s", raw, blockID)
 
 		link := Link{
 			Raw:       raw,

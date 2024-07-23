@@ -39,7 +39,9 @@ func ExportGraph(graph graph.Graph, siteDir string, requirePublic bool) error {
 		graph = graph.PublicGraph()
 	}
 
-	log.Infof("Graph has %d pages and %d assets", len(graph.Pages), len(graph.Assets))
+	totalPages := len(graph.Pages)
+	totalAssets := len(graph.Assets)
+	log.Infof("Graph has %d pages and %d assets", totalPages, totalAssets)
 
 	exporter := Exporter{
 		Graph:           graph,
@@ -58,44 +60,55 @@ func ExportGraph(graph graph.Graph, siteDir string, requirePublic bool) error {
 		return errors.Wrap(err, "exporting graph JSON")
 	}
 
-	if err := exporter.ExportPages(); err != nil {
+	exportedPageCount, err := exporter.ExportPages()
+	if err != nil {
 		return errors.Wrap(err, "exporting pages")
 	}
 
 	log.Infof("Exporting assets from %d asset links", len(graph.AssetLinks()))
 
-	if err := exporter.ExportAssets(); err != nil {
+	exportedAssetCount, err := exporter.ExportAssets()
+	if err != nil {
 		return errors.Wrap(err, "exporting assets")
 	}
 
-	pageCount := len(graph.Pages)
-	log.Infof("Exported %d pages and %d assets", pageCount, len(graph.Assets))
+	log.Infof("Exported %d pages and %d assets", exportedPageCount, exportedAssetCount)
 
 	return nil
 }
 
 // ExportAssets exports graph asset files to the site directory.
-func (e *Exporter) ExportAssets() error {
-	log.Infof("Exporting assets to: %s", e.AssetDir)
-	log.Warning("Removing existing asset directory")
+func (e *Exporter) ExportAssets() (int, error) {
+	exportCount := 0
 
-	if err := os.RemoveAll(e.AssetDir); err != nil {
-		return errors.Wrap(err, "removing existing asset directory")
-	}
+	log.Infof("Exporting assets to: %s", e.AssetDir)
 
 	if err := os.MkdirAll(e.AssetDir, folderPermissions); err != nil {
-		return errors.Wrap(err, "creating asset directory "+e.AssetDir)
+		return exportCount, errors.Wrap(err, "creating asset directory "+e.AssetDir)
 	}
 
 	for _, asset := range e.Graph.Assets {
 		log.Debug("Exporting asset " + asset.Name)
+		targetPath := e.PublishedAssetPath(asset.Name)
+		sourcePath := filepath.Join(e.Graph.GraphDir, "assets", asset.PathInGraph)
+		shouldExport, err := e.ShouldExportGraphFile(sourcePath, targetPath)
 
-		if err := e.ExportLinkedAsset(*asset); err != nil {
-			return errors.Wrap(err, "exporting asset "+asset.Name)
+		if err != nil {
+			return exportCount, errors.Wrap(err, "checking if asset should be exported")
 		}
+
+		if !shouldExport {
+			continue
+		}
+
+		if err := e.ExportGraphFile(sourcePath, targetPath); err != nil {
+			return exportCount, errors.Wrap(err, "exporting asset "+asset.Name)
+		}
+
+		exportCount++
 	}
 
-	return nil
+	return exportCount, nil
 }
 
 // ExportGraphJSON exports the graph to a JSON file in the site directory.
@@ -126,17 +139,13 @@ func (e *Exporter) ExportGraphJSON() error {
 }
 
 // ExportPages exports the graph pages to the site directory.
-func (e *Exporter) ExportPages() error {
+func (e *Exporter) ExportPages() (int, error) {
 	log.Info("Exporting pages to: ", e.ContentDir)
 
-	log.Warning("Removing existing content directory")
-
-	if err := os.RemoveAll(e.ContentDir); err != nil {
-		return errors.Wrap(err, "removing existing content directory")
-	}
+	exportCount := 0
 
 	if err := os.MkdirAll(e.ContentDir, folderPermissions); err != nil {
-		return errors.Wrap(err, "creating content directory "+e.ContentDir)
+		return exportCount, errors.Wrap(err, "creating content directory "+e.ContentDir)
 	}
 
 	wg := new(sync.WaitGroup)
@@ -153,13 +162,17 @@ func (e *Exporter) ExportPages() error {
 			if err != nil {
 				log.Error("Error exporting page:", err)
 				close(c)
+
+				return
 			}
+
+			exportCount++
 		}(wg, page)
 	}
 
 	wg.Wait()
 
-	return nil
+	return exportCount, nil
 }
 
 func (e *Exporter) exportPage(page graph.Page) error {
@@ -201,22 +214,54 @@ func (e *Exporter) exportPage(page graph.Page) error {
 	return nil
 }
 
+func (e *Exporter) ShouldSkipBlock(block graph.Block) bool {
+	if e.RequirePublic && !block.IsPublic() {
+		log.Warn("Skipping non-public block: ", block.String())
+
+		return true
+	}
+
+	if block.IsTask() {
+		log.Debug("Skipping task block: ", block.String())
+
+		return true
+	}
+
+	return false
+}
+
+func (e *Exporter) ConstructBlockShortcode(block graph.Block) string {
+	shortcodeArgs := map[string]string{}
+
+	shortcodeArgs["id"] = block.ID
+
+	if block.Depth > 0 {
+		captionProp, ok := block.Properties.Get("caption")
+		if ok {
+			shortcodeArgs["caption"] = strings.Replace(captionProp.Value, "\"", "\\\"", -1)
+		}
+
+		callout := block.Callout()
+		if callout != "" {
+			shortcodeArgs["callout"] = callout
+		}
+	}
+
+	shortCode := "block"
+
+	for arg, value := range shortcodeArgs {
+		shortCode = shortCode + " " + arg + "=\"" + value + "\""
+	}
+
+	return shortCode
+}
+
 // ProcessBlock turns a block and its children into Hugo content.
 func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 	log.Debug("Processing block ", block.ID)
 
-	if e.RequirePublic {
-		if !block.IsPublic() {
-			log.Warn("Skipping non-public block: ", block.String())
-
-			return "", nil
-		}
-
-		if block.IsTask() {
-			log.Warn("Skipping task block from public view: ", block.String())
-
-			return "", nil
-		}
+	if e.ShouldSkipBlock(block) {
+		return "", nil
 	}
 
 	blockContent := ""
@@ -238,25 +283,7 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 		}
 	}
 
-	shortcodeArgs := map[string]string{}
-
-	shortcodeArgs["id"] = block.ID
-
-	captionProp, ok := block.Properties.Get("caption")
-	if ok {
-		shortcodeArgs["caption"] = strings.Replace(captionProp.Value, "\"", "\\\"", -1)
-	}
-
-	callout := block.Callout()
-	if callout != "" {
-		shortcodeArgs["callout"] = callout
-	}
-
-	shortCode := "block"
-
-	for arg, value := range shortcodeArgs {
-		shortCode = shortCode + " " + arg + "=\"" + value + "\""
-	}
+	shortCode := e.ConstructBlockShortcode(block)
 
 	if block.IsHeader() {
 		headerString := fmt.Sprintf(`{{%% block-header level=%d %%}}%s{{%% /block-header %%}}`, block.Depth, blockContent)
@@ -281,7 +308,7 @@ func (e *Exporter) ProcessBlock(block graph.Block) (string, error) {
 
 func (e *Exporter) ProcessBlockLink(link graph.Link) string {
 	if link.LinkType == graph.LinkTypePage {
-		permalink, ok := e.PagePermalink(link.LinkPath)
+		permalink, ok := e.PermalinkForPage(link.LinkPath)
 		if ok {
 			return `{{< page-link link="` + permalink + `" >}}` + link.Label + "{{< /page-link >}}"
 		}
@@ -298,13 +325,13 @@ func (e *Exporter) ProcessBlockLink(link graph.Link) string {
 		}
 
 		blockContent := targetBlock.Content.Markdown
-		permalink := e.BlockPermalink(*targetBlock)
+		permalink := e.PermalinkForBlock(*targetBlock)
 
 		return `{{< block-link link="` + permalink + `" >}}` + blockContent + "{{< /block-link >}}"
 	}
 
 	if link.LinkType == graph.LinkTypeTag {
-		permalink, ok := e.PagePermalink(link.LinkPath)
+		permalink, ok := e.PermalinkForPage(link.LinkPath)
 		if ok {
 			// oops that space from identifying tags
 			shortCode := fmt.Sprintf(` {{< logseq/tag-link label="%s" link="%s" >}}`, link.Label, permalink)
@@ -316,7 +343,7 @@ func (e *Exporter) ProcessBlockLink(link graph.Link) string {
 	}
 
 	if link.LinkType == graph.LinkTypeAsset {
-		permalink, ok := e.AssetPermalink(link.LinkPath)
+		permalink, ok := e.PermalinkForAsset(link.LinkPath)
 		if ok {
 			return "![" + link.Label + "](" + permalink + ")"
 		}
@@ -331,8 +358,16 @@ func (e *Exporter) ProcessBlockEmbeddedShortcodes(blockContent string) string {
 	// ex: {{video https://www.youtube.com/watch?v=0Uc3ZrmhDN4}}
 	videoRe := regexp.MustCompile(`\{\{video https://www\.youtube\.com/watch\?v=([^}]+)\}\}`)
 
-	embeddedVideo := `<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
-	<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="allowfullscreen" loading="eager" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/$1?autoplay=0&controls=1&end=0&loop=0&mute=0&start=0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" title="YouTube video"
+	embeddedVideo := `<div
+	style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+	<iframe
+		allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+		allowfullscreen="allowfullscreen"
+		loading="eager"
+		referrerpolicy="strict-origin-when-cross-origin"
+		src="https://www.youtube.com/embed/$1?autoplay=0&controls=1&end=0&loop=0&mute=0&start=0" 
+		style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" 
+		title="YouTube video"
 	></iframe>
 	</div>`
 	blockContent = videoRe.ReplaceAllString(blockContent, embeddedVideo)
@@ -349,21 +384,8 @@ func UnavailableLink(label string) string {
 	return "*" + label + "*"
 }
 
-func (e *Exporter) ExportLinkedAsset(asset graph.Asset) error {
-	targetPath := e.PublishedAssetPath(asset.Name)
-	sourcePath := filepath.Join(e.Graph.GraphDir, "assets", asset.PathInGraph)
-
+func (e *Exporter) ExportGraphFile(sourcePath string, targetPath string) error {
 	log.Debugf("Exporting asset: %s → %s", sourcePath, targetPath)
-	// Copy the file at sourcePath to targetPath
-	shouldExport, err := e.shouldExportAsset(sourcePath, targetPath)
-
-	if err != nil {
-		return errors.Wrap(err, "checking if asset should be exported")
-	}
-
-	if !shouldExport {
-		return nil
-	}
 
 	source, err := os.Open(sourcePath)
 	if err != nil {
@@ -406,7 +428,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 			continue
 		}
 
-		pagePermalink, ok := e.PagePermalink(block.PageName)
+		pagePermalink, ok := e.PermalinkForPage(block.PageName)
 
 		if !ok {
 			log.Warn("No permalink found for block: ", blockID)
@@ -431,7 +453,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 			continue
 		}
 
-		permalink, ok := e.PagePermalink(block.PageName)
+		permalink, ok := e.PermalinkForPage(block.PageName)
 
 		if !ok {
 			log.Warn("No permalink found for block: ", blockID)
@@ -451,7 +473,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 
 		for _, tag := range tags {
 			tagKey := strings.ToLower(tag)
-			tagPermalink, ok := e.PagePermalink(tagKey)
+			tagPermalink, ok := e.PermalinkForPage(tagKey)
 
 			if !ok {
 				log.Warn("No permalink found for tag: ", tag)
@@ -476,7 +498,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 		bannerPath := strings.TrimPrefix(bannerProp.String(), "../assets/")
 		log.Debug("Found banner property: ", bannerPath)
 
-		banner, ok = e.AssetPermalink(bannerPath)
+		banner, ok = e.PermalinkForAsset(bannerPath)
 		if !ok {
 			log.Warn("No permalink found for banner asset: ", bannerPath)
 		}
@@ -565,8 +587,8 @@ func (e *Exporter) SetPagePermalinks() map[string]string {
 	return permalinks
 }
 
-// AssetPermalink determines the permalink for an Asset.
-func (e *Exporter) AssetPermalink(assetName string) (string, bool) {
+// PermalinkForAsset determines the permalink for an Asset.
+func (e *Exporter) PermalinkForAsset(assetName string) (string, bool) {
 	nameKey := strings.ToLower(assetName)
 	permalink, ok := e.AssetPermalinks[nameKey]
 
@@ -577,9 +599,8 @@ func (e *Exporter) AssetPermalink(assetName string) (string, bool) {
 	return permalink, ok
 }
 
-// PagePermalink determines the permalink for a Page.
-func (e *Exporter) PagePermalink(pageName string) (string, bool) {
-
+// PermalinkForPage determines the permalink for a Page.
+func (e *Exporter) PermalinkForPage(pageName string) (string, bool) {
 	nameKey := strings.ToLower(pageName)
 	permalink, ok := e.PagePermalinks[nameKey]
 
@@ -590,9 +611,9 @@ func (e *Exporter) PagePermalink(pageName string) (string, bool) {
 	return "/" + permalink, ok
 }
 
-// BlockPermalink determines the permalink for a Block.
-func (e *Exporter) BlockPermalink(block graph.Block) string {
-	pagePermalink, ok := e.PagePermalink(block.PageName)
+// PermalinkForBlock determines the permalink for a Block.
+func (e *Exporter) PermalinkForBlock(block graph.Block) string {
+	pagePermalink, ok := e.PermalinkForPage(block.PageName)
 
 	if !ok {
 		log.Warn("No permalink found for block page: ", block.PageName)
@@ -605,15 +626,13 @@ func (e *Exporter) BlockPermalink(block graph.Block) string {
 
 // PageContentPath determines the content file path for a Page.
 func (e *Exporter) PageContentPath(page graph.Page) string {
-
 	if page.Name == "contents" {
 		return filepath.Join(e.ContentDir, "_index.md")
 	}
 
-	permalink, ok := e.PagePermalink(page.Name)
+	permalink, ok := e.PermalinkForPage(page.Name)
 	if !ok {
 		log.Fatalf("No permalink found for page: %s", page.Name)
-
 	}
 
 	// Determine the target path for the page.
@@ -638,7 +657,7 @@ func (e *Exporter) PublishedAssetPath(assetName string) string {
 	return filepath.Join(e.AssetDir, assetBase)
 }
 
-func (e *Exporter) shouldExportAsset(sourcePath string, targetPath string) (bool, error) {
+func (e *Exporter) ShouldExportGraphFile(sourcePath string, targetPath string) (bool, error) {
 	fileExt := filepath.Ext(sourcePath)
 
 	if fileExt == ".pdf" {
@@ -661,8 +680,6 @@ func (e *Exporter) shouldExportAsset(sourcePath string, targetPath string) (bool
 		if !os.IsNotExist(err) {
 			return false, errors.Wrap(err, "checking target file")
 		}
-
-		return true, nil
 	}
 
 	if !targetFileStat.Mode().IsRegular() {
@@ -675,5 +692,14 @@ func (e *Exporter) shouldExportAsset(sourcePath string, targetPath string) (bool
 		return false, nil
 	}
 
-	return true, nil
+	sourceModTime := sourceFileStat.ModTime()
+	targetModTime := targetFileStat.ModTime()
+
+	if sourceModTime.After(targetModTime) {
+		log.Debugf("source is newer than target: %s", sourcePath)
+
+		return true, nil
+	}
+
+	return false, nil
 }
