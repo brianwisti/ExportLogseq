@@ -82,7 +82,7 @@ func TestPropertyMap_Get(t *testing.T) {
 	pm := graph.NewPropertyMap()
 	propName := "test"
 	propValue := "value"
-	pm.Set(propName, propValue)
+	pm = pm.Set(propName, propValue)
 
 	prop, ok := pm.Get(propName)
 	assert.True(t, ok)
@@ -100,7 +100,7 @@ func TestPropertyMap_Set(t *testing.T) {
 	pm := graph.NewPropertyMap()
 	propName := "test"
 	propValue := "value"
-	pm.Set(propName, propValue)
+	pm = pm.Set(propName, propValue)
 
 	prop, ok := pm.Get(propName)
 	assert.True(t, ok)

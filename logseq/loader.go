@@ -131,7 +131,7 @@ func (loader *Loader) loadAssets() error {
 		}
 
 		asset := graph.NewAsset(relPath)
-		err = loader.Graph.AddAsset(&asset)
+		err = loader.Graph.AddAsset(asset)
 
 		if err != nil {
 			return errors.Wrap(err, "adding asset "+assetFile)
@@ -186,7 +186,7 @@ func (loader *Loader) loadPagesFromDir(subdir string) error {
 	}
 
 	for page := range pageCh {
-		err := g.AddPage(&page)
+		err := g.AddPage(page)
 		if err != nil {
 			return errors.Wrap(err, "adding page "+page.Name)
 		}

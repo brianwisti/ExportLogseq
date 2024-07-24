@@ -14,7 +14,7 @@ type Block struct {
 	ID         string        `json:"id"`
 	PageName   string        `json:"-"` // Page that contains this block
 	Content    *BlockContent `json:"content"`
-	Properties *PropertyMap  `json:"properties,omitempty"`
+	Properties PropertyMap   `json:"properties,omitempty"`
 	Depth      int           `json:"depth,omitempty"`
 	Parent     *Block        `json:"-"`
 	Children   []*Block      `json:"children,omitempty"`
@@ -41,7 +41,7 @@ func NewBlock(page *Page, sourceLines []string, depth int) (*Block, error) {
 		propertyMatch := propertyRe.FindStringSubmatch(line)
 		if propertyMatch != nil {
 			prop_name, prop_value := propertyMatch[1], propertyMatch[2]
-			properties.Set(prop_name, prop_value)
+			properties = properties.Set(prop_name, prop_value)
 
 			continue
 		}
@@ -55,7 +55,7 @@ func NewBlock(page *Page, sourceLines []string, depth int) (*Block, error) {
 	if idProp.Value != "" {
 		uuidString = idProp.Value
 	} else {
-		properties.Set("id", uuidString)
+		properties = properties.Set("id", uuidString)
 	}
 
 	block := Block{
@@ -158,7 +158,7 @@ func (b *Block) String() string {
 }
 
 func (b *Block) SetProperty(name, value string) {
-	b.Properties.Set(name, value)
+	b.Properties = b.Properties.Set(name, value)
 }
 
 func (b *Block) Tags() []string {

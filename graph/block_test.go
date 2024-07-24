@@ -52,7 +52,7 @@ func TestBlock_IsPublic_FromProp(t *testing.T) {
 
 	block := graph.NewEmptyBlock()
 	for _, tt := range isPublicTests {
-		block.Properties.Set("public", tt.PropValue)
+		block.Properties = block.Properties.Set("public", tt.PropValue)
 
 		assert.Equal(t, tt.want, block.IsPublic())
 	}
@@ -74,7 +74,7 @@ func TestBlock_IsPublic_Cascading(t *testing.T) {
 		block := graph.NewEmptyBlock()
 		child := graph.NewEmptyBlock()
 
-		block.Properties.Set("public", tt.PropValue)
+		block.Properties = block.Properties.Set("public", tt.PropValue)
 		block.AddChild(child)
 
 		assert.Equal(t, tt.want, child.IsPublic())
@@ -85,9 +85,10 @@ func TestBlock_IsPublic_OverridesParent(t *testing.T) {
 	block := graph.NewEmptyBlock()
 	child := graph.NewEmptyBlock()
 
-	block.Properties.Set("public", "false")
+	block.Properties = block.Properties.Set("public", "false")
 	block.AddChild(child)
-	child.Properties.Set("public", "true")
+
+	child.Properties = child.Properties.Set("public", "true")
 
 	assert.True(t, child.IsPublic())
 }

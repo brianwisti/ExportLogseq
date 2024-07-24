@@ -167,7 +167,7 @@ func (e *Exporter) ExportPages() (int, error) {
 			}
 
 			exportCount++
-		}(wg, page)
+		}(wg, &page)
 	}
 
 	wg.Wait()
@@ -325,7 +325,7 @@ func (e *Exporter) ProcessBlockLink(link graph.Link) string {
 		}
 
 		blockContent := targetBlock.Content.Markdown
-		permalink := e.PermalinkForBlock(*targetBlock)
+		permalink := e.PermalinkForBlock(targetBlock)
 
 		return `{{< block-link link="` + permalink + `" >}}` + blockContent + "{{< /block-link >}}"
 	}
@@ -415,7 +415,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	tagList := []string{}
 	tagLinks := []string{}
 
-	for _, link := range e.Graph.FindLinksToPage(&page) {
+	for _, link := range e.Graph.FindLinksToPage(page) {
 		blockID := link.LinksFrom
 
 		log.Debug("Found backlink from: ", blockID)
@@ -440,7 +440,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 		backlinks = append(backlinks, permalink)
 	}
 
-	for _, tagLink := range e.Graph.FindTagLinksToPage(&page) {
+	for _, tagLink := range e.Graph.FindTagLinksToPage(page) {
 		blockID := tagLink.LinksFrom
 
 		log.Debug("Found tag link from: ", blockID)

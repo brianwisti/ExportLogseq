@@ -10,22 +10,22 @@ import (
 type Graph struct {
 	GraphDir          string
 	HoistedNamespaces []string
-	Pages             map[string]*Page  `json:"pages"`
-	Blocks            map[string]*Block `json:"-"`
-	Assets            map[string]*Asset `json:"assets"`
+	Pages             map[string]Page  `json:"pages"`
+	Blocks            map[string]Block `json:"-"`
+	Assets            map[string]Asset `json:"assets"`
 }
 
 func NewGraph() Graph {
 	return Graph{
-		Pages:             map[string]*Page{},
-		Assets:            map[string]*Asset{},
-		Blocks:            map[string]*Block{},
+		Pages:             map[string]Page{},
+		Assets:            map[string]Asset{},
+		Blocks:            map[string]Block{},
 		HoistedNamespaces: []string{},
 	}
 }
 
 // AddAsset adds an asset to the graph.
-func (g *Graph) AddAsset(asset *Asset) error {
+func (g *Graph) AddAsset(asset Asset) error {
 	assetKey := asset.PathInGraph
 	_, assetExists := g.Assets[assetKey]
 
@@ -40,11 +40,11 @@ func (g *Graph) AddAsset(asset *Asset) error {
 }
 
 // Add a single page to the graph.
-func (g *Graph) AddPage(page *Page) error {
+func (g *Graph) AddPage(page Page) error {
 	pageKey := strings.ToLower(page.Name)
 	existingPage, _ := g.Pages[pageKey]
 
-	if existingPage != nil {
+	if existingPage.Name != "" {
 		if existingPage.IsPlaceholder() {
 			log.Debug("Replacing placeholder page: ", page.Name)
 		} else {
@@ -79,7 +79,7 @@ func (g *Graph) AddPage(page *Page) error {
 	}
 
 	for _, block := range page.AllBlocks {
-		g.Blocks[block.ID] = block
+		g.Blocks[block.ID] = *block
 	}
 
 	if page.RequestsHoistedNamespace() {
@@ -91,12 +91,12 @@ func (g *Graph) AddPage(page *Page) error {
 
 // AddPlaceholderPage adds a placeholder page to the graph.
 // Placeholder pages are used to represent pages that do not exist in the graph.
-func (g *Graph) AddPlaceholderPage(name string) (*Page, error) {
+func (g *Graph) AddPlaceholderPage(name string) (Page, error) {
 	pageKey := strings.ToLower(name)
 	_, pageExists := g.Pages[pageKey]
 
 	if pageExists {
-		return nil, PageExistsError{name}
+		return Page{}, PageExistsError{name}
 	}
 
 	page := NewEmptyPage()
@@ -106,13 +106,13 @@ func (g *Graph) AddPlaceholderPage(name string) (*Page, error) {
 	page.Name = name
 	page.Title = title
 
-	page.Root.Properties.Set("public", "true")
+	page.Root.Properties = page.Root.Properties.Set("public", "true")
 
-	return &page, g.AddPage(&page)
+	return page, g.AddPage(page)
 }
 
 // PageIsHoisted returns true if the page is in a hoisted namespace.
-func (g *Graph) PageIsHoisted(page *Page) bool {
+func (g *Graph) PageIsHoisted(page Page) bool {
 	for _, ns := range g.HoistedNamespaces {
 		if page.Name == ns || strings.HasPrefix(page.Name, ns+"/") {
 			return true
@@ -123,14 +123,14 @@ func (g *Graph) PageIsHoisted(page *Page) bool {
 }
 
 // FindAsset returns an asset by path.
-func (g *Graph) FindAsset(path string) (*Asset, bool) {
+func (g *Graph) FindAsset(path string) (Asset, bool) {
 	asset, ok := g.Assets[path]
 
 	return asset, ok
 }
 
 // FindLinksToPage returns all links to a Page.
-func (g *Graph) FindLinksToPage(page *Page) []Link {
+func (g *Graph) FindLinksToPage(page Page) []Link {
 	log.Debug("Finding links in graph to: ", page)
 
 	links := []Link{}
@@ -149,7 +149,7 @@ func (g *Graph) FindLinksToPage(page *Page) []Link {
 }
 
 // FindTagLinksToPage returns all tag links to a Page.
-func (g *Graph) FindTagLinksToPage(page *Page) []Link {
+func (g *Graph) FindTagLinksToPage(page Page) []Link {
 	log.Debug("Finding tag links in graph to: ", page)
 
 	links := []Link{}
@@ -172,7 +172,7 @@ func (g *Graph) FindTagLinksToPage(page *Page) []Link {
 }
 
 // FindPage returns a page by name or alias.
-func (g *Graph) FindPage(name string) (*Page, error) {
+func (g *Graph) FindPage(name string) (Page, error) {
 	pageKey := strings.ToLower(name)
 	page, ok := g.Pages[pageKey]
 
@@ -188,7 +188,7 @@ func (g *Graph) FindPage(name string) (*Page, error) {
 		}
 	}
 
-	return nil, PageNotFoundError{name}
+	return Page{}, PageNotFoundError{name}
 }
 
 // Links returns all links found in the graph.
@@ -229,8 +229,8 @@ func (g *Graph) PageLinks() []Link {
 }
 
 // PagesInNamespace returns all pages in a namespace.
-func (g *Graph) PagesInNamespace(namespace string) []*Page {
-	pages := []*Page{}
+func (g *Graph) PagesInNamespace(namespace string) []Page {
+	pages := []Page{}
 	asPrefix := namespace + "/"
 
 	for _, page := range g.Pages {

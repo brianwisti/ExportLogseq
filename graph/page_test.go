@@ -38,7 +38,7 @@ func TestPage_Aliases_FromProperties(t *testing.T) {
 
 	for _, tt := range aliasesTests {
 		page := graph.NewEmptyPage()
-		page.Root.Properties.Set("alias", tt.PropValue)
+		page.Root.Properties = page.Root.Properties.Set("alias", tt.PropValue)
 		aliases := page.Aliases()
 
 		assert.ElementsMatch(t, tt.want, aliases)
@@ -88,7 +88,7 @@ func TestPage_IsPublic_FromRoot(t *testing.T) {
 
 	page := graph.NewEmptyPage()
 	for _, tt := range isPublicTests {
-		page.Root.Properties.Set("public", tt.PropValue)
+		page.Root.Properties = page.Root.Properties.Set("public", tt.PropValue)
 
 		assert.Equal(t, tt.want, page.IsPublic())
 	}
@@ -127,7 +127,7 @@ func TestPage_Properties_Empty(t *testing.T) {
 func TestPage_Properties_FromRoot(t *testing.T) {
 	page := graph.NewEmptyPage()
 	page.Name = "Test Page"
-	page.Root.Properties.Set("id", "123")
+	page.Root.Properties = page.Root.Properties.Set("id", "123")
 	pageProps := page.Properties()
 	got, ok := pageProps.Get("id")
 
@@ -162,7 +162,7 @@ func TestPage_SetRoot_WithChildren(t *testing.T) {
 func TestPage_Tags(t *testing.T) {
 	page := graph.NewEmptyPage()
 	tag := gofakeit.Word()
-	page.Root.Properties.Set("tags", tag)
+	page.Root.Properties = page.Root.Properties.Set("tags", tag)
 	tags := page.Tags()
 
 	assert.Contains(t, tags, tag)

@@ -22,7 +22,7 @@ func TestGraph_NewGraph(t *testing.T) {
 func TestGraph_AddAsset(t *testing.T) {
 	g := graph.NewGraph()
 	asset := graph.NewAsset("assets/test.jpg")
-	err := g.AddAsset(&asset)
+	err := g.AddAsset(asset)
 
 	assert.NoError(t, err)
 
@@ -30,14 +30,14 @@ func TestGraph_AddAsset(t *testing.T) {
 	addedAsset, ok := g.Assets[assetKey]
 
 	assert.True(t, ok)
-	assert.Equal(t, &asset, addedAsset)
+	assert.Equal(t, asset, addedAsset)
 }
 
 func TestGraph_AddAsset_WithExistingAsset(t *testing.T) {
 	g := graph.NewGraph()
 	asset := graph.NewAsset("assets/test.jpg")
-	_ = g.AddAsset(&asset)
-	err := g.AddAsset(&asset)
+	_ = g.AddAsset(asset)
+	err := g.AddAsset(asset)
 
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, graph.AssetExistsError{AssetPath: asset.PathInGraph})
@@ -47,14 +47,14 @@ func TestGraph_AddPage(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	err := g.AddPage(&page)
+	err := g.AddPage(page)
 	assert.NoError(t, err)
 
 	pageKey := strings.ToLower(page.Name)
 	addedPage, ok := g.Pages[pageKey]
 
 	assert.True(t, ok)
-	assert.Equal(t, &page, addedPage)
+	assert.Equal(t, page, addedPage)
 }
 
 func TestGraph_AddPage_WithExistingPage(t *testing.T) {
@@ -62,8 +62,8 @@ func TestGraph_AddPage_WithExistingPage(t *testing.T) {
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	page.PathInGraph = page.Name
-	_ = g.AddPage(&page)
-	err := g.AddPage(&page)
+	_ = g.AddPage(page)
+	err := g.AddPage(page)
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, graph.PageExistsError{PageName: page.Name})
@@ -74,8 +74,8 @@ func TestGraph_AddPage_WithTags(t *testing.T) {
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
 	tag := gofakeit.Word()
-	page.Root.Properties.Set("tags", tag)
-	err := g.AddPage(&page)
+	page.Root.Properties = page.Root.Properties.Set("tags", tag)
+	err := g.AddPage(page)
 
 	assert.NoError(t, err)
 
@@ -107,35 +107,35 @@ func TestGraph_AddPage_WhenPlaceholderExists(t *testing.T) {
 	realPage.Name = placeholderName
 	realPage.PathInGraph = placeholderName
 
-	err := g.AddPage(&realPage)
+	err := g.AddPage(realPage)
 
 	assert.NoError(t, err)
 
 	addedPage, err := g.FindPage(placeholderName)
 
 	assert.NoError(t, err)
-	assert.Equal(t, addedPage, &realPage)
+	assert.Equal(t, addedPage, realPage)
 }
 
 func TestGraph_FindAsset(t *testing.T) {
 	g := graph.NewGraph()
 	asset := graph.NewAsset("assets/test.jpg")
-	_ = g.AddAsset(&asset)
+	_ = g.AddAsset(asset)
 	foundAsset, ok := g.FindAsset("assets/test.jpg")
 
 	assert.True(t, ok)
-	assert.Equal(t, &asset, foundAsset)
+	assert.Equal(t, asset, foundAsset)
 }
 
 func TestGraph_FindAsset_CaseInsensitive(t *testing.T) {
 	g := graph.NewGraph()
 	assetName := "assets/test.jpg"
 	asset := graph.NewAsset(assetName)
-	_ = g.AddAsset(&asset)
+	_ = g.AddAsset(asset)
 	foundAsset, ok := g.FindAsset(strings.ToUpper(assetName))
 
 	assert.False(t, ok)
-	assert.Nil(t, foundAsset)
+	assert.Empty(t, foundAsset)
 }
 
 func TestGraph_FindAsset_NotFound(t *testing.T) {
@@ -148,10 +148,10 @@ func TestGraph_FindAsset_NotFound(t *testing.T) {
 func TestGraph_FindLinksToPage(t *testing.T) {
 	g := graph.NewGraph()
 	fromPage, toPage := Page(), Page()
-	err := g.AddPage(&fromPage)
+	err := g.AddPage(fromPage)
 	require.NoError(t, err)
 
-	err = g.AddPage(&toPage)
+	err = g.AddPage(toPage)
 	require.NoError(t, err)
 
 	link := graph.Link{
@@ -164,7 +164,7 @@ func TestGraph_FindLinksToPage(t *testing.T) {
 	link, err = fromPage.Root.Content.AddLink(link)
 	require.NoError(t, err)
 
-	links := g.FindLinksToPage(&toPage)
+	links := g.FindLinksToPage(toPage)
 	assert.NotEmpty(t, links)
 	assert.Contains(t, links, link)
 }
@@ -173,22 +173,22 @@ func TestGraph_FindPage(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	_ = g.AddPage(&page)
+	_ = g.AddPage(page)
 	foundPage, err := g.FindPage(page.Name)
 
 	assert.NoError(t, err)
-	assert.Equal(t, &page, foundPage)
+	assert.Equal(t, page, foundPage)
 }
 
 func TestGraph_FindPage_CaseInsensitive(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	_ = g.AddPage(&page)
+	_ = g.AddPage(page)
 	foundPage, err := g.FindPage(page.Name)
 
 	assert.NoError(t, err)
-	assert.Equal(t, &page, foundPage)
+	assert.Equal(t, page, foundPage)
 }
 
 func TestGraph_FindPage_NotFound(t *testing.T) {
@@ -203,23 +203,23 @@ func TestGraph_FindPage_WithAlias(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = gofakeit.Word()
-	page.Root.Properties.Set("alias", "alias")
-	_ = g.AddPage(&page)
+	page.Root.Properties = page.Root.Properties.Set("alias", "alias")
+	_ = g.AddPage(page)
 	foundPage, err := g.FindPage("alias")
 
 	assert.NoError(t, err)
-	assert.Equal(t, &page, foundPage)
+	assert.Equal(t, page, foundPage)
 }
 
 func TestGraph_PagesInNamespace(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 	page.Name = "test/page"
-	_ = g.AddPage(&page)
+	_ = g.AddPage(page)
 	pages := g.PagesInNamespace("test")
 
 	assert.NotEmpty(t, pages)
-	assert.Contains(t, pages, &page)
+	assert.Contains(t, pages, page)
 }
 
 func TestGraph_Links(t *testing.T) {
@@ -233,7 +233,7 @@ func TestGraph_Links(t *testing.T) {
 		IsEmbed:  false,
 	}
 	link, _ = page.Root.Content.AddLink(link)
-	g.AddPage(&page)
+	g.AddPage(page)
 	links := g.Links()
 
 	assert.NotEmpty(t, links)
@@ -250,10 +250,10 @@ func TestGraph_Links_Empty(t *testing.T) {
 func TestGraph_AssetLinks(t *testing.T) {
 	g := graph.NewGraph()
 	page := Page()
-	g.AddPage(&page)
+	g.AddPage(page)
 
 	asset := graph.NewAsset("assets/test.jpg")
-	_ = g.AddAsset(&asset)
+	_ = g.AddAsset(asset)
 	link := graph.Link{
 		LinkPath: asset.PathInGraph,
 		Label:    asset.PathInGraph,
@@ -278,7 +278,7 @@ func TestGraph_PageLinks(t *testing.T) {
 	g := graph.NewGraph()
 	page := graph.NewEmptyPage()
 
-	g.AddPage(&page)
+	g.AddPage(page)
 
 	pageName, label := PageName(), LinkLabel()
 	link := graph.Link{
@@ -306,7 +306,7 @@ func TestGraph_ResourceLinks(t *testing.T) {
 		LinkType: graph.LinkTypeResource,
 	}
 	link, _ = page.Root.Content.AddLink(link)
-	g.AddPage(&page)
+	g.AddPage(page)
 	links := g.ResourceLinks()
 
 	assert.NotEmpty(t, links)
@@ -318,19 +318,19 @@ func TestGraph_PublicGraph(t *testing.T) {
 
 	publicPage := graph.NewEmptyPage()
 	publicPage.Name = gofakeit.Word()
-	publicPage.Root.Properties.Set("public", "true")
-	_ = g.AddPage(&publicPage)
+	publicPage.Root.Properties = publicPage.Root.Properties.Set("public", "true")
+	_ = g.AddPage(publicPage)
 
 	privatePage := graph.NewEmptyPage()
 	privatePage.Name = "Private Page"
-	privatePage.Root.Properties.Set("public", "false")
-	_ = g.AddPage(&privatePage)
+	privatePage.Root.Properties = privatePage.Root.Properties.Set("public", "false")
+	_ = g.AddPage(privatePage)
 
 	publicGraph := g.PublicGraph()
 	foundPage, err := publicGraph.FindPage(publicPage.Name)
 
 	assert.NoError(t, err)
-	assert.Equal(t, &publicPage, foundPage)
+	assert.Equal(t, publicPage, foundPage)
 
 	_, err = publicGraph.FindPage("Private Page")
 	assert.Error(t, err)
@@ -341,11 +341,11 @@ func TestGraph_PublicGraph_WithAssetInPublicPage(t *testing.T) {
 
 	publicPage := graph.NewEmptyPage()
 	publicPage.Name = gofakeit.Word()
-	publicPage.Root.Properties.Set("public", "true")
-	_ = g.AddPage(&publicPage)
+	publicPage.Root.Properties = publicPage.Root.Properties.Set("public", "true")
+	_ = g.AddPage(publicPage)
 
 	asset := graph.NewAsset("assets/test.jpg")
-	_ = g.AddAsset(&asset)
+	_ = g.AddAsset(asset)
 	link := graph.Link{
 		LinkPath: asset.PathInGraph,
 		Label:    asset.PathInGraph,

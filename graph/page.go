@@ -94,7 +94,7 @@ func (p *Page) TagLinks() []Link {
 }
 
 // Properties returns the root block's properties.
-func (p *Page) Properties() *PropertyMap {
+func (p *Page) Properties() PropertyMap {
 	return p.Root.Properties
 }
 
