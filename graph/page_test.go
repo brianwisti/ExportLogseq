@@ -13,7 +13,6 @@ func TestPage_NewEmptyPage(t *testing.T) {
 	page := graph.NewEmptyPage()
 
 	assert.NotNil(t, page)
-	assert.Equal(t, "page", page.Kind)
 	assert.NotNil(t, page.Root)
 	assert.Contains(t, page.AllBlocks, page.Root)
 }

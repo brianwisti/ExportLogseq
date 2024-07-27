@@ -14,7 +14,7 @@ type BlockContent struct {
 	BlockID  string          `json:"block_id"` // Block that contains this content
 	Markdown string          `json:"markdown"`
 	Links    map[string]Link `json:"links"`
-	Callout  string          `json:"callout"`
+	Callout  string          `json:"callout,omitempty"`
 }
 
 func NewEmptyBlockContent() *BlockContent {

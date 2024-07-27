@@ -9,7 +9,6 @@ type Page struct {
 	Name        string   `json:"-"`
 	Title       string   `json:"title"`
 	PathInGraph string   `json:"-"`
-	Kind        string   `json:"kind"`
 	Root        *Block   `json:"root"`
 	AllBlocks   []*Block `json:"-"`
 }
@@ -18,7 +17,6 @@ func NewEmptyPage() Page {
 	root := NewEmptyBlock()
 
 	return Page{
-		Kind:      "page",
 		Root:      root,
 		AllBlocks: []*Block{root},
 	}
@@ -49,11 +47,6 @@ func (p *Page) IsPlaceholder() bool {
 // IsPublic returns true if the page root is public.
 func (p *Page) IsPublic() bool {
 	return p.Root.IsPublic()
-}
-
-// IsSection returns true if the page is a section.
-func (p *Page) IsSection() bool {
-	return p.Kind == "section"
 }
 
 // Links returns links collected from all blocks in the page.

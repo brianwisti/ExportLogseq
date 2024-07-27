@@ -97,7 +97,6 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 		Name:        fullPageName,
 		Title:       title,
 		PathInGraph: pathInGraph,
-		Kind:        "page",
 	}
 
 	blocks, err := findBlocks(&page, lines)
