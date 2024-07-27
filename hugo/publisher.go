@@ -245,6 +245,10 @@ func (e *Exporter) ConstructBlockShortcode(block graph.Block) string {
 		if callout != "" {
 			shortcodeArgs["callout"] = callout
 		}
+
+		if !block.IsPublic() {
+			shortcodeArgs["classes"] = "private"
+		}
 	}
 
 	shortCode := "block"
@@ -680,6 +684,12 @@ func (e *Exporter) ShouldExportGraphFile(sourcePath string, targetPath string) (
 		if !os.IsNotExist(err) {
 			return false, errors.Wrap(err, "checking target file")
 		}
+	}
+
+	if targetFileStat == nil {
+		log.Debugf("Target file does not exist: %s", targetPath)
+
+		return true, nil
 	}
 
 	if !targetFileStat.Mode().IsRegular() {
