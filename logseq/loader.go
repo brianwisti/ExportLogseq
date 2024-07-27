@@ -1,6 +1,7 @@
 package logseq
 
 import (
+	"bytes"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 
 	"export-logseq/graph"
 )
@@ -50,6 +53,26 @@ func LoadGraph(graphDir string) (graph.Graph, error) {
 		if err := loader.loadPagesFromDir(pageDir); err != nil {
 			return loader.Graph, errors.Wrap(err, "loading pages from "+pageDir)
 		}
+	}
+
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+	)
+
+	for _, block := range loader.Graph.Blocks {
+		var buf bytes.Buffer
+
+		if err := md.Convert([]byte(block.Content.Markdown), &buf); err != nil {
+			log.Fatal("converting markdown to HTML:", err)
+		}
+
+		block.Content.HTML = buf.String()
+	}
+
+	// Gather backlinks and tag links to pages
+	for _, page := range loader.Graph.Pages {
+		page.Backlinks = loader.Graph.FindLinksToPage(page)
+		page.TaggedLinks = loader.Graph.FindTagLinksToPage(page)
 	}
 
 	return loader.Graph, nil

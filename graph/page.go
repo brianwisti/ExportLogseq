@@ -11,14 +11,18 @@ type Page struct {
 	PathInGraph string   `json:"-"`
 	Root        *Block   `json:"root"`
 	AllBlocks   []*Block `json:"-"`
+	Backlinks   []Link   `json:"backlinks"`
+	TaggedLinks []Link   `json:"tag_links"`
 }
 
 func NewEmptyPage() Page {
 	root := NewEmptyBlock()
 
 	return Page{
-		Root:      root,
-		AllBlocks: []*Block{root},
+		Root:        root,
+		AllBlocks:   []*Block{root},
+		Backlinks:   []Link{},
+		TaggedLinks: []Link{},
 	}
 }
 

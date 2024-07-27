@@ -13,6 +13,7 @@ import (
 type BlockContent struct {
 	BlockID  string          `json:"block_id"` // Block that contains this content
 	Markdown string          `json:"markdown"`
+	HTML     string          `json:"html,omitempty"`
 	Links    map[string]Link `json:"links"`
 	Callout  string          `json:"callout,omitempty"`
 }

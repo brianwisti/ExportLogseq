@@ -14,6 +14,7 @@ type Graph struct {
 	Pages             map[string]*Page  `json:"pages"`
 	Blocks            map[string]*Block `json:"-"`
 	Assets            []Asset           `json:"assets"`
+	links             []Link
 }
 
 func NewGraph() Graph {
@@ -203,13 +204,16 @@ func (g *Graph) FindPage(name string) (*Page, error) {
 
 // Links returns all links found in the graph.
 func (g *Graph) Links() []Link {
-	links := []Link{}
+	if g.links == nil {
+		links := []Link{}
+		for _, page := range g.Pages {
+			links = append(links, page.Links()...)
+		}
 
-	for _, page := range g.Pages {
-		links = append(links, page.Links()...)
+		g.links = links
 	}
 
-	return links
+	return g.links
 }
 
 // AssetLinks returns all asset links found in the graph.
