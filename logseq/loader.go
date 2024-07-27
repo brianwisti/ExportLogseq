@@ -29,6 +29,8 @@ type Loader struct {
 func NewLoader(graphDir string) Loader {
 	g := graph.NewGraph()
 	g.GraphDir = graphDir
+	g.Name = filepath.Base(graphDir)
+	log.Info("Graph name: ", g.Name)
 
 	return Loader{GraphDir: graphDir, Graph: g}
 }
@@ -131,7 +133,7 @@ func (loader *Loader) loadAssets() error {
 		}
 
 		asset := graph.NewAsset(relPath)
-		err = loader.Graph.AddAsset(&asset)
+		err = loader.Graph.AddAsset(asset)
 
 		if err != nil {
 			return errors.Wrap(err, "adding asset "+assetFile)

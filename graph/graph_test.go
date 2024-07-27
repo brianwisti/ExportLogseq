@@ -22,25 +22,21 @@ func TestGraph_NewGraph(t *testing.T) {
 func TestGraph_AddAsset(t *testing.T) {
 	g := graph.NewGraph()
 	asset := graph.NewAsset("assets/test.jpg")
-	err := g.AddAsset(&asset)
+	err := g.AddAsset(asset)
 
 	assert.NoError(t, err)
 
-	assetKey := strings.ToLower(asset.PathInGraph)
-	addedAsset, ok := g.Assets[assetKey]
-
-	assert.True(t, ok)
-	assert.Equal(t, &asset, addedAsset)
+	assert.Contains(t, g.Assets, asset)
 }
 
 func TestGraph_AddAsset_WithExistingAsset(t *testing.T) {
 	g := graph.NewGraph()
 	asset := graph.NewAsset("assets/test.jpg")
-	_ = g.AddAsset(&asset)
-	err := g.AddAsset(&asset)
+	_ = g.AddAsset(asset)
+	err := g.AddAsset(asset)
 
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, graph.AssetExistsError{AssetPath: asset.PathInGraph})
+	assert.ErrorIs(t, err, graph.AssetExistsError{AssetPath: asset.Name})
 }
 
 func TestGraph_AddPage(t *testing.T) {
@@ -120,22 +116,22 @@ func TestGraph_AddPage_WhenPlaceholderExists(t *testing.T) {
 func TestGraph_FindAsset(t *testing.T) {
 	g := graph.NewGraph()
 	asset := graph.NewAsset("assets/test.jpg")
-	_ = g.AddAsset(&asset)
+	_ = g.AddAsset(asset)
 	foundAsset, ok := g.FindAsset("assets/test.jpg")
 
 	assert.True(t, ok)
-	assert.Equal(t, &asset, foundAsset)
+	assert.Equal(t, asset, foundAsset)
 }
 
-func TestGraph_FindAsset_CaseInsensitive(t *testing.T) {
+func TestGraph_FindAsset_IsCaseDependent(t *testing.T) {
 	g := graph.NewGraph()
-	assetName := "assets/test.jpg"
-	asset := graph.NewAsset(assetName)
-	_ = g.AddAsset(&asset)
-	foundAsset, ok := g.FindAsset(strings.ToUpper(assetName))
+	assetPath := "assets/test.jpg"
+	asset := graph.NewAsset(assetPath)
+	_ = g.AddAsset(asset)
+	foundAsset, ok := g.FindAsset(strings.ToUpper(assetPath))
 
 	assert.False(t, ok)
-	assert.Nil(t, foundAsset)
+	assert.Empty(t, foundAsset)
 }
 
 func TestGraph_FindAsset_NotFound(t *testing.T) {
@@ -253,10 +249,10 @@ func TestGraph_AssetLinks(t *testing.T) {
 	g.AddPage(&page)
 
 	asset := graph.NewAsset("assets/test.jpg")
-	_ = g.AddAsset(&asset)
+	_ = g.AddAsset(asset)
 	link := graph.Link{
-		LinkPath: asset.PathInGraph,
-		Label:    asset.PathInGraph,
+		LinkPath: asset.Path,
+		Label:    asset.Name,
 		LinkType: graph.LinkTypeAsset,
 		IsEmbed:  false,
 	}
@@ -345,10 +341,10 @@ func TestGraph_PublicGraph_WithAssetInPublicPage(t *testing.T) {
 	_ = g.AddPage(&publicPage)
 
 	asset := graph.NewAsset("assets/test.jpg")
-	_ = g.AddAsset(&asset)
+	_ = g.AddAsset(asset)
 	link := graph.Link{
-		LinkPath: asset.PathInGraph,
-		Label:    asset.PathInGraph,
+		LinkPath: asset.Path,
+		Label:    asset.Name,
 		LinkType: graph.LinkTypeAsset,
 		IsEmbed:  false,
 	}

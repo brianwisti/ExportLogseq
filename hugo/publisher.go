@@ -56,13 +56,9 @@ func ExportGraph(graph graph.Graph, siteDir string, requirePublic bool) error {
 	exporter.PagePermalinks = exporter.SetPagePermalinks()
 	exporter.AssetPermalinks = exporter.SetAssetPermalinks()
 
-	if err := exporter.ExportGraphJSON(); err != nil {
-		return errors.Wrap(err, "exporting graph JSON")
-	}
-
-	exportedPageCount, err := exporter.ExportPages()
+	exportedPageCount, err := exporter.ExportGraphJSON()
 	if err != nil {
-		return errors.Wrap(err, "exporting pages")
+		return errors.Wrap(err, "exporting graph JSON")
 	}
 
 	log.Infof("Exporting assets from %d asset links", len(graph.AssetLinks()))
@@ -90,7 +86,7 @@ func (e *Exporter) ExportAssets() (int, error) {
 	for _, asset := range e.Graph.Assets {
 		log.Debug("Exporting asset " + asset.Name)
 		targetPath := e.PublishedAssetPath(asset.Name)
-		sourcePath := filepath.Join(e.Graph.GraphDir, "assets", asset.PathInGraph)
+		sourcePath := filepath.Join(e.Graph.GraphDir, "assets", asset.Name)
 		shouldExport, err := e.ShouldExportGraphFile(sourcePath, targetPath)
 
 		if err != nil {
@@ -112,18 +108,19 @@ func (e *Exporter) ExportAssets() (int, error) {
 }
 
 // ExportGraphJSON exports the graph to a JSON file in the site directory.
-func (e *Exporter) ExportGraphJSON() error {
-	exportDir := filepath.Join(e.SiteDir, "assets", "exported")
+func (e *Exporter) ExportGraphJSON() (int, error) {
+	exportCount := 0
+	exportDir := e.SiteDir
 
 	if err := os.MkdirAll(exportDir, folderPermissions); err != nil {
-		return errors.Wrap(err, "creating data export directory"+exportDir)
+		return exportCount, errors.Wrap(err, "creating data export directory"+exportDir)
 	}
 
 	exportDataPath := filepath.Join(exportDir, "logseq.json")
 	exportFile, err := os.Create(exportDataPath)
 
 	if err != nil {
-		return errors.Wrap(err, "creating export file")
+		return exportCount, errors.Wrap(err, "creating export file")
 	}
 
 	defer exportFile.Close()
@@ -132,10 +129,12 @@ func (e *Exporter) ExportGraphJSON() error {
 	enc.SetIndent("", "  ")
 
 	if err := enc.Encode(e.Graph); err != nil {
-		return errors.Wrap(err, "encoding graph to JSON")
+		return exportCount, errors.Wrap(err, "encoding graph to JSON")
 	}
 
-	return nil
+	exportCount = len(e.Graph.Pages)
+
+	return exportCount, nil
 }
 
 // ExportPages exports the graph pages to the site directory.

@@ -8,33 +8,33 @@ import (
 )
 
 type Graph struct {
-	GraphDir          string
-	HoistedNamespaces []string
+	GraphDir          string            `json:"-"`
+	Name              string            `json:"name"`
+	HoistedNamespaces []string          `json:"-"`
 	Pages             map[string]*Page  `json:"pages"`
 	Blocks            map[string]*Block `json:"-"`
-	Assets            map[string]*Asset `json:"assets"`
+	Assets            []Asset           `json:"assets"`
 }
 
 func NewGraph() Graph {
 	return Graph{
 		Pages:             map[string]*Page{},
-		Assets:            map[string]*Asset{},
+		Assets:            []Asset{},
 		Blocks:            map[string]*Block{},
 		HoistedNamespaces: []string{},
 	}
 }
 
 // AddAsset adds an asset to the graph.
-func (g *Graph) AddAsset(asset *Asset) error {
-	assetKey := asset.PathInGraph
-	_, assetExists := g.Assets[assetKey]
+func (g *Graph) AddAsset(asset Asset) error {
+	_, assetExists := g.FindAsset(asset.Path)
 
 	if assetExists {
-		return AssetExistsError{asset.PathInGraph}
+		return AssetExistsError{asset.Name}
 	}
 
-	log.Debug("Adding asset" + asset.PathInGraph)
-	g.Assets[assetKey] = asset
+	log.Debug("Adding asset" + asset.Name)
+	g.Assets = append(g.Assets, asset)
 
 	return nil
 }
@@ -42,6 +42,12 @@ func (g *Graph) AddAsset(asset *Asset) error {
 // Add a single page to the graph.
 func (g *Graph) AddPage(page *Page) error {
 	pageKey := strings.ToLower(page.Name)
+
+	// Ignore placeholder properties like "-"
+	if pageKey == "-" {
+		return nil
+	}
+
 	existingPage, _ := g.Pages[pageKey]
 
 	if existingPage != nil {
@@ -123,10 +129,14 @@ func (g *Graph) PageIsHoisted(page *Page) bool {
 }
 
 // FindAsset returns an asset by path.
-func (g *Graph) FindAsset(path string) (*Asset, bool) {
-	asset, ok := g.Assets[path]
+func (g *Graph) FindAsset(path string) (Asset, bool) {
+	for _, asset := range g.Assets {
+		if asset.Path == path {
+			return asset, true
+		}
+	}
 
-	return asset, ok
+	return Asset{}, false
 }
 
 // FindLinksToPage returns all links to a Page.
@@ -246,6 +256,7 @@ func (g *Graph) PagesInNamespace(namespace string) []*Page {
 func (g *Graph) PublicGraph() Graph {
 	publicGraph := NewGraph()
 	publicGraph.GraphDir = g.GraphDir
+	publicGraph.Name = g.Name
 
 	for _, page := range g.Pages {
 		if page.IsPublic() {
