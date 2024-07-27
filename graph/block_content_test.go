@@ -111,6 +111,29 @@ func TestBlockContent_IsCodeBlock(t *testing.T) {
 	assert.True(t, content.IsCodeBlock())
 }
 
+func TestBlockContent_IsTask(t *testing.T) {
+	isTaskTests := []struct {
+		markdown string
+		want     bool
+	}{
+		{"NOW task", true},
+		{"LATER task", true},
+		{"TODO task", true},
+		{"DONE task", true},
+		{"CANCELED task", true},
+		{"WAITING task", true},
+		{"task", false},
+	}
+
+	for _, tt := range isTaskTests {
+		content := graph.BlockContent{
+			Markdown: tt.markdown,
+		}
+
+		assert.Equal(t, tt.want, content.IsTask())
+	}
+}
+
 func TestBlockContent_SetMarkdown(t *testing.T) {
 	content := graph.NewEmptyBlockContent()
 	markdown := gofakeit.Sentence(5)

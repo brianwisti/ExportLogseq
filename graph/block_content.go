@@ -68,6 +68,13 @@ func (bc *BlockContent) IsCodeBlock() bool {
 	return codeBlockRe.MatchString(bc.Markdown)
 }
 
+// IsTask returns true if the block content describes a Logseq task.
+func (bc *BlockContent) IsTask() bool {
+	taskRe := regexp.MustCompile(`^(?:NOW|LATER|TODO|DONE|CANCELED|WAITING)\s`)
+
+	return taskRe.MatchString(bc.Markdown)
+}
+
 // SetMarkdown sets the markdown content of the block.
 func (bc *BlockContent) SetMarkdown(markdown string) error {
 	calloutRe := regexp.MustCompile(`(?sm)#\+BEGIN_(\S+)\n(.+?)\n#\+END_(\S+)`)

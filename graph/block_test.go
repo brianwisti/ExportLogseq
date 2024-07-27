@@ -92,6 +92,16 @@ func TestBlock_IsPublic_OverridesParent(t *testing.T) {
 	assert.True(t, child.IsPublic())
 }
 
+func TestBlock_IsPublic_ChildWithTaskContent(t *testing.T) {
+	block := graph.NewEmptyBlock()
+	block.Properties.Set("public", "true")
+
+	child := graph.NewEmptyBlock()
+	child.Content.Markdown = "NOW task"
+
+	assert.False(t, child.IsPublic())
+}
+
 func TestBlock_Links(t *testing.T) {
 	block := graph.NewEmptyBlock()
 	link := graph.Link{
