@@ -8,6 +8,7 @@ import (
 type Page struct {
 	Name        string   `json:"-"`
 	Title       string   `json:"title"`
+	Namespace   string   `json:"namespace"`
 	PathInGraph string   `json:"-"`
 	Root        *Block   `json:"root"`
 	AllBlocks   []*Block `json:"-"`

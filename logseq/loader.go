@@ -80,13 +80,16 @@ func LoadGraph(graphDir string) (graph.Graph, error) {
 
 func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, error) {
 	baseName := filepath.Base(pageFile)
+	namespace := "pages"
 	fullPageFileName := strings.ReplaceAll(baseName, "___", "/")
 	fullPageName := strings.TrimSuffix(fullPageFileName, ".md")
+	title := fullPageName
 	journalDateRe := regexp.MustCompile(`^\d{4}_\d{2}_\d{2}$`)
 	titleIsJournalDate := journalDateRe.MatchString(fullPageName)
 
 	if titleIsJournalDate {
 		fullPageName = strings.Replace(fullPageName, "_", "-", -1)
+		namespace = "journals"
 	} else {
 		escapedName, decodeErr := url.QueryUnescape(fullPageName)
 		if decodeErr != nil {
@@ -102,7 +105,12 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 	}
 
 	nameSteps := strings.Split(fullPageName, "/")
-	title := nameSteps[len(nameSteps)-1]
+	stepCount := len(nameSteps)
+
+	if stepCount > 1 {
+		title = nameSteps[len(nameSteps)-1]
+		namespace = namespace + "/" + strings.Join(nameSteps[:stepCount-1], "/")
+	}
 
 	// Process each line of fullPageName
 	file, err := os.Open(pageFile)
@@ -119,6 +127,7 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 	page := graph.Page{
 		Name:        fullPageName,
 		Title:       title,
+		Namespace:   namespace,
 		PathInGraph: pathInGraph,
 	}
 
