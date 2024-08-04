@@ -12,6 +12,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
 	github.com/yuin/goldmark v1.7.4
+	go.abhg.dev/goldmark/wikilink v0.5.0
 )
 
 require (

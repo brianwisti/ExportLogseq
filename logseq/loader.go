@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
+	"go.abhg.dev/goldmark/wikilink"
 
 	"export-logseq/graph"
 )
@@ -22,6 +23,10 @@ const (
 	branchBlockOpener    = "- "
 	branchBlockContinuer = "  "
 )
+
+type GraphLinkResolver struct {
+	Graph graph.Graph
+}
 
 // Loader loads a Logseq graph from a directory.
 type Loader struct {
@@ -56,7 +61,7 @@ func LoadGraph(graphDir string) (graph.Graph, error) {
 	}
 
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithExtensions(extension.GFM, &wikilink.Extender{}),
 	)
 
 	for _, block := range loader.Graph.Blocks {

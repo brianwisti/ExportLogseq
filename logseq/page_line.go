@@ -45,5 +45,5 @@ func LoadPageLines(r io.Reader) ([]PageLine, error) {
 }
 
 func (pl PageLine) String() string {
-	return fmt.Sprintf("<PageLine: Indent=%d; Content=%s>", pl.Indent, pl.Content)
+	return fmt.Sprintf("<PageLine: Depth=%d; Content=%s>", pl.Indent, pl.Content)
 }
