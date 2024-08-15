@@ -9,7 +9,8 @@ type Page struct {
 	Name        string   `json:"-"`
 	Title       string   `json:"title"`
 	Namespace   string   `json:"namespace"`
-	PathInGraph string   `json:"-"`
+	Path        string   `json:"path"`
+	PathInGraph string   `json:"path_in_graph"`
 	Root        *Block   `json:"root"`
 	AllBlocks   []*Block `json:"-"`
 	Backlinks   []Link   `json:"backlinks"`

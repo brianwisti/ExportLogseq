@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/yuin/goldmark"
@@ -117,6 +118,15 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 		namespace = namespace + "/" + strings.Join(nameSteps[:stepCount-1], "/")
 	}
 
+	// Generate a slug for the page name
+	slugs := []string{}
+
+	for _, step := range nameSteps {
+		slugs = append(slugs, slug.Make(step))
+	}
+
+	slugName := strings.Join(slugs, "/")
+
 	// Process each line of fullPageName
 	file, err := os.Open(pageFile)
 	if err != nil {
@@ -134,6 +144,7 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 		Title:       title,
 		Namespace:   namespace,
 		PathInGraph: pathInGraph,
+		Path:        slugName,
 	}
 
 	blocks, err := findBlocks(&page, lines)

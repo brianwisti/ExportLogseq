@@ -61,6 +61,14 @@ func ExportGraph(graph graph.Graph, siteDir string, requirePublic bool) error {
 		return errors.Wrap(err, "exporting graph JSON")
 	}
 
+	log.Infof("Exported pages into graph JSON: %d", exportedPageCount)
+
+	exportedPageCount, err = exporter.ExportPages()
+	if err != nil {
+		return errors.Wrap(err, "exporting pages")
+	}
+
+	log.Infof("Exported %d pages as pages", exportedPageCount)
 	log.Infof("Exporting assets from %d asset links", len(graph.AssetLinks()))
 
 	exportedAssetCount, err := exporter.ExportAssets()
