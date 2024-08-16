@@ -367,7 +367,7 @@ func (e *Exporter) ProcessBlockLink(link graph.Link) string {
 
 func (e *Exporter) ProcessBlockEmbeddedShortcodes(blockContent string) string {
 	// ex: {{video https://www.youtube.com/watch?v=0Uc3ZrmhDN4}}
-	videoRe := regexp.MustCompile(`\{\{video https://www\.youtube\.com/watch\?v=([^}]+)\}\}`)
+	videoRe := regexp.MustCompile(`\{\{video (?:(?:https://www\.youtube\.com/watch\?v=)|(?:https://youtu.be/))([^}]+)\}\}`)
 
 	embeddedVideo := `<div
 	style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
@@ -423,6 +423,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	date := ""
 	backlinks := []string{}
 	banner := ""
+	summary := ""
 	tagList := []string{}
 	tagLinks := []string{}
 
@@ -487,7 +488,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 			tagPermalink, ok := e.PermalinkForPage(tagKey)
 
 			if !ok {
-				log.Warn("No permalink found for tag: ", tag)
+				log.Debug("No permalink found for tag: ", tag)
 
 				continue
 			}
@@ -515,6 +516,11 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 		}
 	}
 
+	summaryProp, ok := page.Root.Properties.Get("summary")
+	if ok {
+		summary = summaryProp.String()
+	}
+
 	frontmatter := struct {
 		Title     string   `json:"title"`
 		Date      string   `json:"date,omitempty"`
@@ -522,6 +528,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 		Tags      []string `json:"tags,omitempty"`
 		TagLinks  []string `json:"taglinks,omitempty"`
 		Banner    string   `json:"banner,omitempty"`
+		Summary   string   `json:"summary,omitempty"`
 	}{
 		Title:     page.Title,
 		Date:      date,
@@ -529,6 +536,7 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 		Tags:      tagList,
 		TagLinks:  tagLinks,
 		Banner:    banner,
+		Summary:   summary,
 	}
 
 	// encode the frontmatter to JSON
