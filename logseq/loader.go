@@ -89,7 +89,6 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 	namespace := "pages"
 	fullPageFileName := strings.ReplaceAll(baseName, "___", "/")
 	fullPageName := strings.TrimSuffix(fullPageFileName, ".md")
-	title := fullPageName
 	journalDateRe := regexp.MustCompile(`^\d{4}_\d{2}_\d{2}$`)
 	titleIsJournalDate := journalDateRe.MatchString(fullPageName)
 
@@ -105,6 +104,7 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 		fullPageName = escapedName
 	}
 
+	title := fullPageName
 	pathInGraph, err := filepath.Rel(graphPath, pageFile)
 	if err != nil {
 		return graph.Page{}, errors.Wrap(err, "calculating path in graph")
@@ -116,6 +116,7 @@ func (loader *Loader) LoadPage(pageFile string, graphPath string) (graph.Page, e
 	if stepCount > 1 {
 		title = nameSteps[len(nameSteps)-1]
 		namespace = namespace + "/" + strings.Join(nameSteps[:stepCount-1], "/")
+		log.Debugf("'%s' has namespace '%s' and title '%s'", fullPageName, namespace, title)
 	}
 
 	// Generate a slug for the page name

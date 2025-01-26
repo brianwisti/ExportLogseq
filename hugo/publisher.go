@@ -186,6 +186,7 @@ func (e *Exporter) exportPage(page graph.Page) error {
 	log.Debug("Exporting page:", page.Name)
 
 	contentPath := e.PageContentPath(page)
+	log.Debug("Page content path:", contentPath)
 	pageFrontmatter := e.determinePageFrontmatter(page)
 	log.Debug("Page frontmatter:", pageFrontmatter)
 
@@ -504,6 +505,8 @@ func (e *Exporter) determinePageFrontmatter(page graph.Page) string {
 	} else if page.IsJournal() {
 		date = page.Name
 	}
+
+	date = strings.Replace(date, "/", "-", -1)
 
 	bannerProp, ok := page.Root.Properties.Get("banner")
 	if ok {

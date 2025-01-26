@@ -40,7 +40,7 @@ func (p *Page) Aliases() []string {
 
 // IsJournal returns true if the page name looks like a journal entry.
 func (p *Page) IsJournal() bool {
-	dateRe := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+	dateRe := regexp.MustCompile(`^\d{4}[/-]\d{2}[/-]\d{2}$`)
 
 	return dateRe.MatchString(p.Name)
 }

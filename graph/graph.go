@@ -43,6 +43,7 @@ func (g *Graph) AddAsset(asset Asset) error {
 // Add a single page to the graph.
 func (g *Graph) AddPage(page *Page) error {
 	pageKey := strings.ToLower(page.Name)
+	log.Debug("Adding page with key: ", pageKey)
 
 	// Ignore placeholder properties like "-"
 	if pageKey == "-" {
